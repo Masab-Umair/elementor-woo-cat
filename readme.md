@@ -38,7 +38,7 @@ Most WooCommerce + Elementor integrations fall into one of two camps: rigid them
 - CSS with custom properties, mapped directly to Elementor style controls
 
 ## Architecture
-
+```
 elementor-woo-catalog-builder/
 ├── elementor-woo-catalog-builder.php Plugin bootstrap and dependency checks
 ├── includes/
@@ -55,7 +55,7 @@ elementor-woo-catalog-builder/
 │ ├── catalog-frontend.js
 │ └── ajax-filter.js
 └── readme.md
-
+```
 
 Widget classes handle only Elementor controls and rendering. Query logic, caching, and markup generation live in `includes/`, so the same product card output is used whether the page is first loaded or updated via AJAX filtering.
 
