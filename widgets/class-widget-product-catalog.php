@@ -154,18 +154,11 @@ class Widget_Product_Catalog extends Widget_Base {
 			'columns',
 			array(
 				'label'          => __( 'Columns', 'ewcb' ),
-				'type'           => Controls_Manager::SELECT,
-				'default'        => '4',
-				'tablet_default' => '3',
-				'mobile_default' => '2',
-				'options'        => array(
-					'1' => '1',
-					'2' => '2',
-					'3' => '3',
-					'4' => '4',
-					'5' => '5',
-					'6' => '6',
-				),
+				'type'           => Controls_Manager::NUMBER,
+				'min'            => 1,
+				'default'        => 4,
+				'tablet_default' => 3,
+				'mobile_default' => 2,
 				'selectors'      => array(
 					'{{WRAPPER}} .ewcb-grid' => '--ewcb-columns: {{VALUE}};',
 				),
@@ -466,7 +459,7 @@ class Widget_Product_Catalog extends Widget_Base {
 			array(
 				'label'     => __( 'Image Fit', 'ewcb' ),
 				'type'      => Controls_Manager::SELECT,
-				'default'   => 'cover',
+				'default'   => 'contain',
 				'options'   => array(
 					'cover'   => __( 'Cover', 'ewcb' ),
 					'contain' => __( 'Contain', 'ewcb' ),
@@ -763,6 +756,126 @@ class Widget_Product_Catalog extends Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'heading_category',
+			array(
+				'label'     => __( 'Category', 'ewcb' ),
+				'type'      => Controls_Manager::HEADING,
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'category_typography',
+				'selector' => '{{WRAPPER}} .ewcb-card__cat',
+			)
+		);
+
+		$this->add_control(
+			'category_color',
+			array(
+				'label'     => __( 'Category Color', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#999999',
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-card__cat' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'heading_add_to_cart',
+			array(
+				'label'     => __( 'Add to Cart Button', 'ewcb' ),
+				'type'      => Controls_Manager::HEADING,
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'button_typography',
+				'selector' => '{{WRAPPER}} .ewcb-add-to-cart',
+			)
+		);
+
+		$this->add_control(
+			'button_background',
+			array(
+				'label'     => __( 'Button Background', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#1a1a1a',
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-add-to-cart' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'button_text_color',
+			array(
+				'label'     => __( 'Button Text Color', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-add-to-cart' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'button_background_hover',
+			array(
+				'label'     => __( 'Button Background (Hover)', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-add-to-cart:hover' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'button_text_color_hover',
+			array(
+				'label'     => __( 'Button Text Color (Hover)', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#1a1a1a',
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-add-to-cart:hover' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Border::get_type(),
+			array(
+				'name'     => 'button_border',
+				'selector' => '{{WRAPPER}} .ewcb-add-to-cart',
+			)
+		);
+
+		$this->add_control(
+			'button_radius',
+			array(
+				'label'      => __( 'Button Corner Radius', 'ewcb' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array(
+					'px' => array(
+						'min' => 0,
+						'max' => 40,
+					),
+				),
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-add-to-cart' => 'border-radius: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
 		$this->end_controls_section();
 	}
 
@@ -838,6 +951,42 @@ class Widget_Product_Catalog extends Widget_Base {
 		return $options;
 	}
 
+	/**
+	 * Captures the active WooCommerce archive constraints for this widget.
+	 *
+	 * @return array
+	 */
+	private function get_archive_query_context() {
+		global $wp_query;
+
+		if ( ! $wp_query instanceof \WP_Query ) {
+			return array();
+		}
+
+		$is_shop_archive = function_exists( 'is_shop' ) && is_shop();
+		$is_product_taxonomy = function_exists( 'is_product_taxonomy' ) && is_product_taxonomy();
+		$post_type = isset( $wp_query->query_vars['post_type'] ) ? $wp_query->query_vars['post_type'] : '';
+		$is_product_search = function_exists( 'is_search' ) && is_search()
+			&& ( 'product' === $post_type || ( is_array( $post_type ) && in_array( 'product', $post_type, true ) ) );
+
+		if ( ! $is_shop_archive && ! $is_product_taxonomy && ! $is_product_search ) {
+			return array();
+		}
+
+		$context = array();
+		if ( isset( $wp_query->tax_query->queries ) && is_array( $wp_query->tax_query->queries ) ) {
+			$context['tax_query'] = $wp_query->tax_query->queries;
+		}
+		if ( isset( $wp_query->meta_query->queries ) && is_array( $wp_query->meta_query->queries ) ) {
+			$context['meta_query'] = $wp_query->meta_query->queries;
+		}
+		if ( $is_product_search && ! empty( $wp_query->query_vars['s'] ) ) {
+			$context['search'] = sanitize_text_field( $wp_query->query_vars['s'] );
+		}
+
+		return $context;
+	}
+
 	/* ------------------------------------------------------------------ *
 	 *  RENDER
 	 * ------------------------------------------------------------------ */
@@ -859,7 +1008,9 @@ class Widget_Product_Catalog extends Widget_Base {
 		\Elementor_Woo_Catalog_Builder\Plugin::instance()->enqueue_catalog_assets();
 
 		$filters_enabled = 'yes' === $settings['enable_filters'];
-		if ( $filters_enabled ) {
+		$has_ajax_pagination = 'grid' === $settings['display_mode'] && 'yes' === $settings['show_pagination'];
+		$has_quick_view = 'yes' === $settings['show_quick_view'];
+		if ( $filters_enabled || $has_ajax_pagination || $has_quick_view ) {
 			\Elementor_Woo_Catalog_Builder\Plugin::instance()->enqueue_filter_assets();
 		}
 
@@ -874,8 +1025,18 @@ class Widget_Product_Catalog extends Widget_Base {
 			'hover_image_swap'  => 'yes' === $settings['hover_image_swap'],
 		);
 
-		$ajax_filter = \Elementor_Woo_Catalog_Builder\Ajax_Filter::instance();
-		$query       = $ajax_filter->build_query( array(), $card_settings, 1 );
+		$ajax_filter     = \Elementor_Woo_Catalog_Builder\Ajax_Filter::instance();
+		$archive_context = $this->get_archive_query_context();
+		$query_settings  = $card_settings;
+		$ajax_settings   = $card_settings;
+		$initial_page    = 1;
+		if ( $archive_context ) {
+			global $wp_query;
+			$query_settings['archive_context'] = $archive_context;
+			$ajax_settings['archive_context']  = $ajax_filter->create_archive_context_token( $archive_context );
+			$initial_page = ! empty( $wp_query->query_vars['paged'] ) ? max( 1, absint( $wp_query->query_vars['paged'] ) ) : 1;
+		}
+		$query = $ajax_filter->build_query( array(), $query_settings, $initial_page );
 
 		$wrapper_classes = array(
 			'ewcb-layout',
@@ -885,7 +1046,7 @@ class Widget_Product_Catalog extends Widget_Base {
 		<div class="<?php echo esc_attr( implode( ' ', $wrapper_classes ) ); ?>">
 
 			<?php if ( $filters_enabled ) : ?>
-				<?php $this->render_sidebar_filters( $settings ); ?>
+				<?php $this->render_sidebar_filters( $settings, $archive_context ); ?>
 			<?php endif; ?>
 
 			<div class="ewcb-catalog-main">
@@ -893,7 +1054,7 @@ class Widget_Product_Catalog extends Widget_Base {
 					class="ewcb-grid ewcb-grid--<?php echo esc_attr( $settings['display_mode'] ); ?>"
 					data-widget-id="<?php echo esc_attr( $this->get_id() ); ?>"
 					data-display-mode="<?php echo esc_attr( $settings['display_mode'] ); ?>"
-					data-settings="<?php echo esc_attr( wp_json_encode( $card_settings ) ); ?>"
+					data-settings="<?php echo esc_attr( wp_json_encode( $ajax_settings ) ); ?>"
 					<?php if ( 'slider' === $settings['display_mode'] ) : ?>
 						data-autoplay="<?php echo esc_attr( 'yes' === $settings['slider_autoplay'] ? '1' : '0' ); ?>"
 						data-autoplay-speed="<?php echo esc_attr( $settings['slider_autoplay_speed'] ); ?>"
@@ -916,19 +1077,19 @@ class Widget_Product_Catalog extends Widget_Base {
 				</div>
 
 				<?php if ( 'grid' === $settings['display_mode'] && 'yes' === $settings['show_pagination'] && $query->max_num_pages > 1 ) : ?>
-					<nav class="ewcb-pagination" data-max-pages="<?php echo esc_attr( $query->max_num_pages ); ?>" data-current-page="1" aria-label="<?php esc_attr_e( 'Product pagination', 'ewcb' ); ?>">
-						<button type="button" class="ewcb-pagination__prev" disabled><?php Render_Helpers::icon( 'chevron-left' ); ?></button>
+					<nav class="ewcb-pagination" data-max-pages="<?php echo esc_attr( $query->max_num_pages ); ?>" data-current-page="<?php echo esc_attr( $initial_page ); ?>" aria-label="<?php esc_attr_e( 'Product pagination', 'ewcb' ); ?>">
+						<button type="button" class="ewcb-pagination__prev" <?php disabled( $initial_page <= 1 ); ?>><?php Render_Helpers::icon( 'chevron-left' ); ?></button>
 						<span class="ewcb-pagination__status">
 							<?php
 							printf(
 								/* translators: 1: current page 2: total pages */
 								esc_html__( 'Page %1$s of %2$s', 'ewcb' ),
-								'<span class="ewcb-pagination__current">1</span>',
+								'<span class="ewcb-pagination__current">' . esc_html( $initial_page ) . '</span>',
 								'<span class="ewcb-pagination__total">' . esc_html( $query->max_num_pages ) . '</span>'
 							);
 							?>
 						</span>
-						<button type="button" class="ewcb-pagination__next"><?php Render_Helpers::icon( 'chevron-right' ); ?></button>
+						<button type="button" class="ewcb-pagination__next" <?php disabled( $initial_page >= $query->max_num_pages ); ?>><?php Render_Helpers::icon( 'chevron-right' ); ?></button>
 					</nav>
 				<?php endif; ?>
 			</div>
@@ -942,14 +1103,13 @@ class Widget_Product_Catalog extends Widget_Base {
 	 * @param array $settings Widget settings_for_display().
 	 * @return void
 	 */
-	private function render_sidebar_filters( $settings ) {
+	private function render_sidebar_filters( $settings, $archive_context = array() ) {
 		$bounds = array( 'min' => 0, 'max' => 0 );
 		if ( 'yes' === $settings['filter_price'] ) {
 			$ajax_filter = \Elementor_Woo_Catalog_Builder\Ajax_Filter::instance();
-			$ref         = new \ReflectionMethod( $ajax_filter, 'get_price_bounds' );
-			$ref->setAccessible( true );
-			$bounds = $ref->invoke( $ajax_filter, array() );
+			$bounds      = $ajax_filter->get_price_bounds( array(), $archive_context );
 		}
+		$price_step = pow( 10, - wc_get_price_decimals() );
 		?>
 		<aside class="ewcb-filters<?php echo esc_attr( 'yes' === $settings['filter_collapsible_mobile'] ? ' ewcb-filters--collapsible' : '' ); ?>" data-widget-id="<?php echo esc_attr( $this->get_id() ); ?>">
 
@@ -999,8 +1159,8 @@ class Widget_Product_Catalog extends Widget_Base {
 						<div class="ewcb-filters__price-slider"
 							data-min="<?php echo esc_attr( $bounds['min'] ); ?>"
 							data-max="<?php echo esc_attr( $bounds['max'] ); ?>">
-							<input type="range" class="ewcb-price-min" min="<?php echo esc_attr( $bounds['min'] ); ?>" max="<?php echo esc_attr( $bounds['max'] ); ?>" value="<?php echo esc_attr( $bounds['min'] ); ?>" />
-							<input type="range" class="ewcb-price-max" min="<?php echo esc_attr( $bounds['min'] ); ?>" max="<?php echo esc_attr( $bounds['max'] ); ?>" value="<?php echo esc_attr( $bounds['max'] ); ?>" />
+							<input type="range" class="ewcb-price-min" min="<?php echo esc_attr( $bounds['min'] ); ?>" max="<?php echo esc_attr( $bounds['max'] ); ?>" step="<?php echo esc_attr( $price_step ); ?>" value="<?php echo esc_attr( $bounds['min'] ); ?>" aria-label="<?php esc_attr_e( 'Minimum price', 'ewcb' ); ?>" />
+							<input type="range" class="ewcb-price-max" min="<?php echo esc_attr( $bounds['min'] ); ?>" max="<?php echo esc_attr( $bounds['max'] ); ?>" step="<?php echo esc_attr( $price_step ); ?>" value="<?php echo esc_attr( $bounds['max'] ); ?>" aria-label="<?php esc_attr_e( 'Maximum price', 'ewcb' ); ?>" />
 						</div>
 						<div class="ewcb-filters__price-values">
 							<span class="ewcb-price-min-label"><?php echo wp_kses_post( wc_price( $bounds['min'] ) ); ?></span>

@@ -12,6 +12,7 @@ use Elementor\Widget_Base;
 use Elementor\Controls_Manager;
 use Elementor\Group_Control_Typography;
 use Elementor\Group_Control_Border;
+use Elementor\Group_Control_Box_Shadow;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -204,6 +205,22 @@ class Widget_Single_Product extends Widget_Base {
 		);
 
 		$this->add_control(
+			'gallery_image_fit',
+			array(
+				'label'     => __( 'Image Fit', 'ewcb' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'contain',
+				'options'   => array(
+					'contain' => __( 'Show Full Image', 'ewcb' ),
+					'cover'   => __( 'Fill Image Area', 'ewcb' ),
+				),
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-single__img' => 'object-fit: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
 			'enable_zoom',
 			array(
 				'label'        => __( 'Enable Image Zoom', 'ewcb' ),
@@ -379,6 +396,15 @@ class Widget_Single_Product extends Widget_Base {
 				'selectors' => array(
 					'{{WRAPPER}} .ewcb-single__main-image, {{WRAPPER}} .ewcb-single__thumb' => 'border-radius: {{SIZE}}{{UNIT}};',
 				),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Box_Shadow::get_type(),
+			array(
+				'name'     => 'main_image_shadow',
+				'label'    => __( 'Main Image Shadow', 'ewcb' ),
+				'selector' => '{{WRAPPER}} .ewcb-single__main-image',
 			)
 		);
 
@@ -569,6 +595,18 @@ class Widget_Single_Product extends Widget_Base {
 				'default'   => '#3a3a3a',
 				'selectors' => array(
 					'{{WRAPPER}} .ewcb-single__add-to-cart:hover, {{WRAPPER}} .ewcb-sticky-cta__button:hover' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'cta_text_color_hover',
+			array(
+				'label'     => __( 'Text Color', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-single__add-to-cart:hover, {{WRAPPER}} .ewcb-sticky-cta__button:hover' => 'color: {{VALUE}};',
 				),
 			)
 		);

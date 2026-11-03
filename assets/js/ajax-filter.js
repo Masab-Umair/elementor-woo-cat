@@ -92,8 +92,15 @@
 		}
 
 		var filters = panel ? readFilterState( panel ) : {};
+		var requestId = ( Number( layout.dataset.ewcbRequestId ) || 0 ) + 1;
+		layout.dataset.ewcbRequestId = requestId;
 
 		grid.classList.add( 'is-loading' );
+		grid.setAttribute( 'aria-busy', 'true' );
+		var previousError = grid.querySelector( '.ewcb-request-error' );
+		if ( previousError ) {
+			previousError.remove();
+		}
 
 		var formData = new FormData();
 		formData.append( 'action', 'ewcb_filter_products' );
@@ -101,18 +108,28 @@
 		formData.append( 'settings', JSON.stringify( settings ) );
 		formData.append( 'filters', JSON.stringify( filters ) );
 		formData.append( 'paged', paged || 1 );
+		formData.append( 'include_price_bounds', panel && panel.querySelector( '.ewcb-filters__price-slider' ) ? '1' : '0' );
 
 		fetch( window.EWCB_AJAX.ajax_url, { method: 'POST', body: formData, credentials: 'same-origin' } )
 			.then( function ( res ) {
+				if ( ! res.ok ) {
+					throw new Error( 'Catalog request failed with status ' + res.status );
+				}
 				return res.json();
 			} )
 			.then( function ( json ) {
+				if ( Number( layout.dataset.ewcbRequestId ) !== requestId ) {
+					return;
+				}
 				grid.classList.remove( 'is-loading' );
+				grid.setAttribute( 'aria-busy', 'false' );
 				if ( ! json.success ) {
+					showRequestError( grid, json.data && json.data.message );
 					return;
 				}
 
 				grid.innerHTML = json.data.html;
+				grid.scrollLeft = 0;
 
 				updatePagination( layout, json.data );
 				updatePriceBounds( layout, json.data.price_range );
@@ -124,8 +141,21 @@
 				grid.scrollIntoView( { behavior: 'smooth', block: 'nearest' } );
 			} )
 			.catch( function () {
+				if ( Number( layout.dataset.ewcbRequestId ) !== requestId ) {
+					return;
+				}
 				grid.classList.remove( 'is-loading' );
+				grid.setAttribute( 'aria-busy', 'false' );
+				showRequestError( grid );
 			} );
+	}
+
+	function showRequestError( grid, message ) {
+		var error = document.createElement( 'div' );
+		error.className = 'ewcb-request-error';
+		error.setAttribute( 'role', 'alert' );
+		error.textContent = message || window.EWCB_AJAX.request_error;
+		grid.appendChild( error );
 	}
 
 	/**
@@ -188,14 +218,24 @@
 		}
 		var minInput = slider.querySelector( '.ewcb-price-min' );
 		var maxInput = slider.querySelector( '.ewcb-price-max' );
+		slider.setAttribute( 'data-min', range.min );
+		slider.setAttribute( 'data-max', range.max );
 		if ( minInput ) {
 			minInput.min = range.min;
 			minInput.max = range.max;
+			minInput.value = Math.max( range.min, Math.min( range.max, Number( minInput.value ) ) );
+			minInput.disabled = Number( range.min ) === Number( range.max );
 		}
 		if ( maxInput ) {
 			maxInput.min = range.min;
 			maxInput.max = range.max;
+			maxInput.value = Math.max( range.min, Math.min( range.max, Number( maxInput.value ) ) );
+			maxInput.disabled = Number( range.min ) === Number( range.max );
 		}
+		if ( minInput && maxInput && Number( minInput.value ) > Number( maxInput.value ) ) {
+			minInput.value = maxInput.value;
+		}
+		syncPriceLabels( layout.querySelector( '.ewcb-filters' ) );
 	}
 
 	/**
@@ -225,6 +265,14 @@
 
 			panel.addEventListener( 'input', function ( e ) {
 				if ( e.target.matches( '.ewcb-price-min, .ewcb-price-max' ) ) {
+					var slider = e.target.closest( '.ewcb-filters__price-slider' );
+					var minInput = slider.querySelector( '.ewcb-price-min' );
+					var maxInput = slider.querySelector( '.ewcb-price-max' );
+					if ( e.target.matches( '.ewcb-price-min' ) && Number( minInput.value ) > Number( maxInput.value ) ) {
+						minInput.value = maxInput.value;
+					} else if ( e.target.matches( '.ewcb-price-max' ) && Number( maxInput.value ) < Number( minInput.value ) ) {
+						maxInput.value = minInput.value;
+					}
 					syncPriceLabels( panel );
 					debouncedFetch();
 				}
@@ -286,6 +334,9 @@
 	}
 
 	function syncPriceLabels( panel ) {
+		if ( ! panel ) {
+			return;
+		}
 		var slider = panel.querySelector( '.ewcb-filters__price-slider' );
 		if ( ! slider ) {
 			return;
@@ -295,16 +346,30 @@
 		var minLabel = panel.querySelector( '.ewcb-price-min-label' );
 		var maxLabel = panel.querySelector( '.ewcb-price-max-label' );
 		if ( minInput && minLabel ) {
-			minLabel.textContent = minInput.value;
+			minLabel.textContent = formatPrice( minInput.value );
 		}
 		if ( maxInput && maxLabel ) {
-			maxLabel.textContent = maxInput.value;
+			maxLabel.textContent = formatPrice( maxInput.value );
+		}
+	}
+
+	function formatPrice( value ) {
+		var config = window.EWCB_AJAX || {};
+		try {
+			return new Intl.NumberFormat( config.locale || undefined, {
+				style: 'currency',
+				currency: config.currency || 'USD',
+				minimumFractionDigits: Number( config.price_decimals ) || 0,
+				maximumFractionDigits: Number( config.price_decimals ) || 0,
+			} ).format( Number( value ) );
+		} catch ( e ) {
+			return value;
 		}
 	}
 
 	function initAll( scope ) {
 		scope = scope || document;
-		scope.querySelectorAll( '.ewcb-layout--with-filters' ).forEach( initFilterLayout );
+		scope.querySelectorAll( '.ewcb-layout' ).forEach( initFilterLayout );
 	}
 
 	if ( 'loading' === document.readyState ) {

@@ -44,6 +44,11 @@
 		}
 	}
 
+	var wishlistItems = getLocalSet( 'ewcb_wishlist' );
+	var compareItems  = getLocalSet( 'ewcb_compare' );
+	var iconToggleListenerBound = false;
+	var quickViewListenerBound = false;
+
 	/* -------------------------------------------------------------- *
 	 * Product grid sliders
 	 * -------------------------------------------------------------- */
@@ -52,31 +57,49 @@
 		var sliders = scope.querySelectorAll( '.ewcb-grid--slider' );
 
 		sliders.forEach( function ( slider ) {
-			if ( slider.dataset.ewcbSliderInit ) {
-				return;
-			}
-			slider.dataset.ewcbSliderInit = '1';
-
-			var wrapper   = slider.closest( '.ewcb-catalog-main' ) || slider.parentElement;
+			var wrapper    = slider.closest( '.ewcb-catalog-main' ) || slider.parentElement;
 			var showArrows = '1' === slider.dataset.arrows;
 			var showDots   = '1' === slider.dataset.dots;
 			var loop       = '1' === slider.dataset.loop;
 			var autoplay   = '1' === slider.dataset.autoplay;
 			var speed      = parseInt( slider.dataset.autoplaySpeed, 10 ) || 4000;
 
-			var cards = Array.prototype.slice.call( slider.children );
-			if ( loop && cards.length > 1 ) {
-				// Simple loop illusion: clone first/last card to the opposite ends.
-				var firstClone = cards[ 0 ].cloneNode( true );
-				var lastClone  = cards[ cards.length - 1 ].cloneNode( true );
-				firstClone.setAttribute( 'aria-hidden', 'true' );
-				lastClone.setAttribute( 'aria-hidden', 'true' );
-				slider.appendChild( firstClone );
-				slider.insertBefore( lastClone, slider.firstChild );
+			function getCards() {
+				return Array.prototype.filter.call( slider.children, function ( child ) {
+					return child.classList.contains( 'ewcb-card' );
+				} );
+			}
+
+			function getStep() {
+				var card = getCards()[ 0 ];
+				if ( ! card ) {
+					return 300;
+				}
+				var gap = parseFloat( window.getComputedStyle( slider ).columnGap ) || 0;
+				return card.getBoundingClientRect().width + gap;
+			}
+
+			function goTo( index ) {
+				var cards = getCards();
+				if ( cards[ index ] ) {
+					var offset = cards[ index ].getBoundingClientRect().left - slider.getBoundingClientRect().left;
+					slider.scrollTo( { left: slider.scrollLeft + offset, behavior: 'smooth' } );
+				}
+			}
+
+			function move( direction ) {
+				var maxScroll = slider.scrollWidth - slider.clientWidth;
+				if ( loop && direction < 0 && slider.scrollLeft <= 1 ) {
+					slider.scrollTo( { left: maxScroll, behavior: 'smooth' } );
+				} else if ( loop && direction > 0 && slider.scrollLeft >= maxScroll - 4 ) {
+					slider.scrollTo( { left: 0, behavior: 'smooth' } );
+				} else {
+					slider.scrollBy( { left: direction * getStep(), behavior: 'smooth' } );
+				}
 			}
 
 			var nav = null;
-			if ( showArrows ) {
+			if ( showArrows && ! slider.dataset.ewcbSliderInit ) {
 				nav = document.createElement( 'div' );
 				nav.className = 'ewcb-slider-nav';
 				nav.innerHTML =
@@ -86,88 +109,94 @@
 					'<svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
 				wrapper.insertBefore( nav, slider.nextSibling );
 
-				var scrollByCard = function ( dir ) {
-					var card = slider.querySelector( '.ewcb-card' );
-					var w    = card ? card.getBoundingClientRect().width + 24 : 300;
-					slider.scrollBy( { left: dir * w, behavior: 'smooth' } );
-				};
-
 				nav.querySelector( '.ewcb-slider-nav__prev' ).addEventListener( 'click', function () {
-					scrollByCard( -1 );
+					move( -1 );
 				} );
 				nav.querySelector( '.ewcb-slider-nav__next' ).addEventListener( 'click', function () {
-					scrollByCard( 1 );
+					move( 1 );
 				} );
 			}
 
-			if ( showDots && cards.length > 1 ) {
+			var dotsWrap = wrapper.querySelector( '.ewcb-slider-dots' );
+			if ( showDots && ! dotsWrap ) {
 				var dotsWrap = document.createElement( 'div' );
 				dotsWrap.className = 'ewcb-slider-dots';
-				cards.forEach( function ( card, i ) {
-					var dot = document.createElement( 'button' );
-					dot.type = 'button';
-					dot.className = 'ewcb-slider-dots__dot' + ( 0 === i ? ' is-active' : '' );
-					dot.addEventListener( 'click', function () {
-						card.scrollIntoView( { behavior: 'smooth', inline: 'start', block: 'nearest' } );
-					} );
-					dotsWrap.appendChild( dot );
+				dotsWrap.addEventListener( 'click', function ( event ) {
+					var dot = event.target.closest( '[data-slide-index]' );
+					if ( dot ) {
+						goTo( parseInt( dot.dataset.slideIndex, 10 ) );
+					}
 				} );
 				wrapper.insertBefore( dotsWrap, nav ? nav.nextSibling : slider.nextSibling );
+			}
 
+			if ( ! slider.dataset.ewcbSliderInit ) {
 				slider.addEventListener(
 					'scroll',
 					debounce( function () {
-						var scrollLeft = slider.scrollLeft;
+						var cards = getCards();
 						var closest     = 0;
 						var closestDist = Infinity;
 						cards.forEach( function ( card, i ) {
-							var dist = Math.abs( card.offsetLeft - scrollLeft );
+							var dist = Math.abs( card.getBoundingClientRect().left - slider.getBoundingClientRect().left );
 							if ( dist < closestDist ) {
 								closestDist = dist;
 								closest     = i;
 							}
 						} );
-						dotsWrap.querySelectorAll( '.ewcb-slider-dots__dot' ).forEach( function ( d, i ) {
-							d.classList.toggle( 'is-active', i === closest );
-						} );
+						if ( dotsWrap ) {
+							dotsWrap.querySelectorAll( '.ewcb-slider-dots__dot' ).forEach( function ( d, i ) {
+								d.classList.toggle( 'is-active', i === closest );
+							} );
+						}
 					}, 100 ),
 					{ passive: true }
 				);
+
+				var isDown = false, startX, scrollStart;
+				slider.addEventListener( 'mousedown', function ( e ) {
+					isDown = true;
+					startX = e.pageX;
+					scrollStart = slider.scrollLeft;
+					slider.style.cursor = 'grabbing';
+				} );
+				[ 'mouseleave', 'mouseup' ].forEach( function ( evt ) {
+					slider.addEventListener( evt, function () {
+						isDown = false;
+						slider.style.cursor = '';
+					} );
+				} );
+				slider.addEventListener( 'mousemove', function ( e ) {
+					if ( ! isDown ) {
+						return;
+					}
+					e.preventDefault();
+					slider.scrollLeft = scrollStart - ( e.pageX - startX );
+				} );
+
+				if ( autoplay ) {
+					window.setInterval( function () {
+						if ( getCards().length > 1 ) {
+							move( 1 );
+						}
+					}, speed );
+				}
+
+				slider.dataset.ewcbSliderInit = '1';
 			}
 
-			// Drag-to-scroll for mouse users.
-			var isDown = false, startX, scrollStart;
-			slider.addEventListener( 'mousedown', function ( e ) {
-				isDown = true;
-				startX = e.pageX;
-				scrollStart = slider.scrollLeft;
-				slider.style.cursor = 'grabbing';
-			} );
-			[ 'mouseleave', 'mouseup' ].forEach( function ( evt ) {
-				slider.addEventListener( evt, function () {
-					isDown = false;
-					slider.style.cursor = '';
+			if ( dotsWrap ) {
+				var cards = getCards();
+				dotsWrap.innerHTML = '';
+				dotsWrap.style.display = cards.length < 2 ? 'none' : '';
+				cards.forEach( function ( card, index ) {
+					var dot = document.createElement( 'button' );
+					dot.type = 'button';
+					dot.className = 'ewcb-slider-dots__dot' + ( 0 === index ? ' is-active' : '' );
+					dot.setAttribute( 'aria-label', 'Go to slide ' + ( index + 1 ) );
+					dot.dataset.slideIndex = index;
+					dotsWrap.appendChild( dot );
 				} );
-			} );
-			slider.addEventListener( 'mousemove', function ( e ) {
-				if ( ! isDown ) {
-					return;
-				}
-				e.preventDefault();
-				slider.scrollLeft = scrollStart - ( e.pageX - startX );
-			} );
-
-			if ( autoplay && cards.length > 1 ) {
-				setInterval( function () {
-					var atEnd = slider.scrollLeft + slider.clientWidth >= slider.scrollWidth - 4;
-					if ( atEnd ) {
-						slider.scrollTo( { left: 0, behavior: 'smooth' } );
-					} else {
-						var card = slider.querySelector( '.ewcb-card' );
-						var w    = card ? card.getBoundingClientRect().width + 24 : 300;
-						slider.scrollBy( { left: w, behavior: 'smooth' } );
-					}
-				}, speed );
 			}
 		} );
 	}
@@ -193,11 +222,27 @@
 				if ( ! full ) {
 					return;
 				}
+				var requestId = ( Number( single.dataset.ewcbImageRequest ) || 0 ) + 1;
+				single.dataset.ewcbImageRequest = requestId;
 				mainImg.style.opacity = '0';
-				setTimeout( function () {
+				var preload = new Image();
+				preload.onload = function () {
+					if ( Number( single.dataset.ewcbImageRequest ) !== requestId ) {
+						return;
+					}
+					mainImg.removeAttribute( 'srcset' );
+					mainImg.removeAttribute( 'sizes' );
 					mainImg.src = full;
-					mainImg.style.opacity = '1';
-				}, 120 );
+					window.setTimeout( function () {
+						mainImg.style.opacity = '1';
+					}, 50 );
+				};
+				preload.onerror = function () {
+					if ( Number( single.dataset.ewcbImageRequest ) === requestId ) {
+						mainImg.style.opacity = '1';
+					}
+				};
+				preload.src = full;
 				collection.forEach( function ( el ) {
 					el.classList.toggle( 'is-active', el === trigger );
 				} );
@@ -216,6 +261,32 @@
 					switchImage( dot, dots );
 				} );
 			} );
+
+			if ( dots.length > 1 ) {
+				var mainWrap = single.querySelector( '.ewcb-single__main-wrap' );
+				var touchStartX = null;
+				if ( mainWrap ) {
+					mainWrap.addEventListener( 'touchstart', function ( event ) {
+						touchStartX = event.changedTouches[ 0 ].clientX;
+					}, { passive: true } );
+					mainWrap.addEventListener( 'touchend', function ( event ) {
+						if ( null === touchStartX ) {
+							return;
+						}
+						var distance = event.changedTouches[ 0 ].clientX - touchStartX;
+						touchStartX = null;
+						if ( Math.abs( distance ) < 40 ) {
+							return;
+						}
+						var current = dots.findIndex( function ( dot ) {
+							return dot.classList.contains( 'is-active' );
+						} );
+						var direction = distance < 0 ? 1 : -1;
+						var next = ( current + direction + dots.length ) % dots.length;
+						switchImage( dots[ next ], dots );
+					}, { passive: true } );
+				}
+			}
 		} );
 	}
 
@@ -231,7 +302,8 @@
 			bar.dataset.ewcbStickyInit = '1';
 
 			var triggerSelector = bar.getAttribute( 'data-trigger-selector' );
-			var trigger = triggerSelector ? document.querySelector( triggerSelector ) : null;
+			var widget = bar.closest( '.elementor-widget' );
+			var trigger = triggerSelector && widget ? widget.querySelector( triggerSelector ) : null;
 			if ( ! trigger || ! ( 'IntersectionObserver' in window ) ) {
 				bar.classList.add( 'is-visible' );
 				return;
@@ -254,39 +326,44 @@
 	 * -------------------------------------------------------------- */
 
 	function initIconToggles( scope ) {
-		var wishlist = getLocalSet( 'ewcb_wishlist' );
-		var compare  = getLocalSet( 'ewcb_compare' );
-
 		function applyState() {
 			scope.querySelectorAll( '.ewcb-wishlist' ).forEach( function ( btn ) {
-				btn.classList.toggle( 'is-active', wishlist.has( btn.dataset.productId ) );
+				var active = wishlistItems.has( btn.dataset.productId );
+				btn.classList.toggle( 'is-active', active );
+				btn.setAttribute( 'aria-pressed', active ? 'true' : 'false' );
 			} );
 			scope.querySelectorAll( '.ewcb-compare' ).forEach( function ( btn ) {
-				btn.classList.toggle( 'is-active', compare.has( btn.dataset.productId ) );
+				var active = compareItems.has( btn.dataset.productId );
+				btn.classList.toggle( 'is-active', active );
+				btn.setAttribute( 'aria-pressed', active ? 'true' : 'false' );
 			} );
 		}
 
-		scope.addEventListener( 'click', function ( e ) {
+		applyState();
+
+		if ( iconToggleListenerBound ) {
+			return;
+		}
+		iconToggleListenerBound = true;
+		document.addEventListener( 'click', function ( e ) {
 			var wishBtn = e.target.closest( '.ewcb-wishlist' );
 			if ( wishBtn ) {
 				var id = wishBtn.dataset.productId;
-				wishlist.has( id ) ? wishlist.delete( id ) : wishlist.add( id );
-				saveLocalSet( 'ewcb_wishlist', wishlist );
-				applyState();
-				document.dispatchEvent( new CustomEvent( 'ewcb:wishlist-change', { detail: { productId: id, active: wishlist.has( id ) } } ) );
+				wishlistItems.has( id ) ? wishlistItems.delete( id ) : wishlistItems.add( id );
+				saveLocalSet( 'ewcb_wishlist', wishlistItems );
+				initIconToggles( document );
+				document.dispatchEvent( new CustomEvent( 'ewcb:wishlist-change', { detail: { productId: id, active: wishlistItems.has( id ) } } ) );
 			}
 
 			var compareBtn = e.target.closest( '.ewcb-compare' );
 			if ( compareBtn ) {
 				var cid = compareBtn.dataset.productId;
-				compare.has( cid ) ? compare.delete( cid ) : compare.add( cid );
-				saveLocalSet( 'ewcb_compare', compare );
-				applyState();
-				document.dispatchEvent( new CustomEvent( 'ewcb:compare-change', { detail: { productId: cid, active: compare.has( cid ) } } ) );
+				compareItems.has( cid ) ? compareItems.delete( cid ) : compareItems.add( cid );
+				saveLocalSet( 'ewcb_compare', compareItems );
+				initIconToggles( document );
+				document.dispatchEvent( new CustomEvent( 'ewcb:compare-change', { detail: { productId: cid, active: compareItems.has( cid ) } } ) );
 			}
 		} );
-
-		applyState();
 	}
 
 	/* -------------------------------------------------------------- *
@@ -317,7 +394,11 @@
 	}
 
 	function initQuickView( scope ) {
-		scope.addEventListener( 'click', function ( e ) {
+		if ( quickViewListenerBound ) {
+			return;
+		}
+		quickViewListenerBound = true;
+		document.addEventListener( 'click', function ( e ) {
 			var btn = e.target.closest( '.ewcb-quick-view' );
 			if ( ! btn || ! window.EWCB_AJAX ) {
 				return;

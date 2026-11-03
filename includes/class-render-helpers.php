@@ -66,13 +66,13 @@ final class Render_Helpers {
 					<?php endif; ?>
 
 					<?php if ( ! empty( $settings['show_wishlist'] ) ) : ?>
-						<button type="button" class="ewcb-icon-btn ewcb-wishlist" data-product-id="<?php echo esc_attr( $product->get_id() ); ?>" aria-label="<?php esc_attr_e( 'Add to wishlist', 'ewcb' ); ?>">
+						<button type="button" class="ewcb-icon-btn ewcb-wishlist" data-product-id="<?php echo esc_attr( $product->get_id() ); ?>" aria-label="<?php esc_attr_e( 'Add to wishlist', 'ewcb' ); ?>" aria-pressed="false">
 							<?php self::icon( 'heart' ); ?>
 						</button>
 					<?php endif; ?>
 
 					<?php if ( ! empty( $settings['show_compare'] ) ) : ?>
-						<button type="button" class="ewcb-icon-btn ewcb-compare" data-product-id="<?php echo esc_attr( $product->get_id() ); ?>" aria-label="<?php esc_attr_e( 'Add to compare', 'ewcb' ); ?>">
+						<button type="button" class="ewcb-icon-btn ewcb-compare" data-product-id="<?php echo esc_attr( $product->get_id() ); ?>" aria-label="<?php esc_attr_e( 'Add to compare', 'ewcb' ); ?>" aria-pressed="false">
 							<?php self::icon( 'compare' ); ?>
 						</button>
 					<?php endif; ?>

@@ -132,8 +132,12 @@ final class Plugin {
 			'ewcb-ajax-filter',
 			'EWCB_AJAX',
 			array(
-				'ajax_url' => admin_url( 'admin-ajax.php' ),
-				'nonce'    => wp_create_nonce( 'ewcb_filter_nonce' ),
+				'ajax_url'       => admin_url( 'admin-ajax.php' ),
+				'nonce'           => wp_create_nonce( 'ewcb_filter_nonce' ),
+				'currency'        => get_woocommerce_currency(),
+				'locale'           => str_replace( '_', '-', get_locale() ),
+				'price_decimals'   => wc_get_price_decimals(),
+				'request_error'    => __( 'We could not update the products. Please try again.', 'ewcb' ),
 			)
 		);
 	}

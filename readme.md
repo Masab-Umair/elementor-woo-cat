@@ -19,12 +19,13 @@ Most WooCommerce + Elementor integrations fall into one of two camps: rigid them
 ## Features
 
 - Five distinct catalog presets selectable per widget instance
-- Independent column counts for desktop, tablet, and mobile
+- Independently configurable column counts at desktop, tablet, and mobile breakpoints
 - Grid-to-slider toggle with autoplay, loop, arrows, and dot navigation
 - AJAX left-sidebar filtering by category, price range, product attributes, and stock status, backed by transient-cached WooCommerce queries
-- Adjustable image aspect ratios with cover/contain fit control
+- Adjustable image aspect ratios with contain (full image) and cover fit options
 - Hover image swap using a product's secondary gallery image
-- Quick view, wishlist, and compare icons on each product card
+- Quick view, wishlist, and compare icons on each product card; wishlist and compare selections are stored in the visitor's browser and emit custom events for integrations
+- Lightweight inline SVG icons without external icon-font requests
 - Single product showcase with three gallery styles and a sticky add-to-cart bar
 - Full Elementor Style tab coverage: typography, color, border, shadow, and spacing controls for every element
 - Conditional asset loading — styles and scripts only load on pages where a widget is actually present
@@ -58,6 +59,8 @@ elementor-woo-catalog-builder/
 ```
 
 Widget classes handle only Elementor controls and rendering. Query logic, caching, and markup generation live in `includes/`, so the same product card output is used whether the page is first loaded or updated via AJAX filtering.
+
+The Product Catalog widget inherits the active WooCommerce archive's taxonomy, metadata, and product-search constraints when used in shop, product-taxonomy, or product-search templates. On regular pages it runs its own catalog query. Wishlist and compare state is browser-local; this plugin does not synchronize those lists across devices or connect to a third-party wishlist/compare service.
 
 ## Requirements
 

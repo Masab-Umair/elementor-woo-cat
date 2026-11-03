@@ -73,15 +73,22 @@ final class Ajax_Filter {
 	public function handle_filter_request() {
 		check_ajax_referer( 'ewcb_filter_nonce', 'nonce' );
 
-		$settings = isset( $_POST['settings'] ) ? wp_unslash( (array) $_POST['settings'] ) : array();
+		$settings = $this->get_request_data( 'settings' );
+		if ( isset( $settings['archive_context'] ) && null === $this->decode_archive_context( $settings['archive_context'] ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'The archive context is no longer valid. Refresh the page and try again.', 'ewcb' ) ),
+				400
+			);
+		}
 		$settings = $this->sanitize_widget_settings( $settings );
 
-		$filters = isset( $_POST['filters'] ) ? wp_unslash( (array) $_POST['filters'] ) : array();
+		$filters = $this->get_request_data( 'filters' );
 		$filters = $this->sanitize_filters( $filters );
 
-		$paged = isset( $_POST['paged'] ) ? absint( $_POST['paged'] ) : 1;
+		$paged                = isset( $_POST['paged'] ) ? absint( $_POST['paged'] ) : 1;
+		$include_price_bounds = isset( $_POST['include_price_bounds'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['include_price_bounds'] ) );
 
-		$cache_key = 'ewcb_' . md5( wp_json_encode( $filters ) . wp_json_encode( $settings ) . $paged );
+		$cache_key = 'ewcb_' . md5( wp_json_encode( $filters ) . wp_json_encode( $settings ) . $paged . (int) $include_price_bounds );
 		$cached    = get_transient( $cache_key );
 
 		if ( false !== $cached ) {
@@ -107,7 +114,9 @@ final class Ajax_Filter {
 			'found'       => (int) $query->found_posts,
 			'max_pages'   => (int) $query->max_num_pages,
 			'paged'       => $paged,
-			'price_range' => $this->get_price_bounds( $filters ),
+			'price_range' => $include_price_bounds
+				? $this->get_price_bounds( $filters, $settings['archive_context'] )
+				: null,
 		);
 
 		set_transient( $cache_key, $response, self::CACHE_TTL );
@@ -162,12 +171,13 @@ final class Ajax_Filter {
 	 * initial server-rendered grid, so results are always consistent.
 	 *
 	 * @param array $filters  Sanitized filter state.
-	 * @param array $settings Sanitized widget settings (columns, per_page, orderby, etc).
+	 * @param array $settings Sanitized widget settings and optional archive context.
 	 * @param int   $paged    Current page number.
 	 * @return \WP_Query
 	 */
 	public function build_query( $filters, $settings, $paged = 1 ) {
-		$per_page = ! empty( $settings['products_per_page'] ) ? absint( $settings['products_per_page'] ) : 12;
+		$requested_per_page = isset( $settings['products_per_page'] ) ? (int) $settings['products_per_page'] : 12;
+		$per_page           = -1 === $requested_per_page ? -1 : min( 48, max( 1, $requested_per_page ) );
 
 		$args = array(
 			'post_type'           => 'product',
@@ -177,9 +187,43 @@ final class Ajax_Filter {
 			'ignore_sticky_posts' => true,
 			'no_found_rows'       => false,
 		);
+		if ( isset( $settings['fields'] ) && 'ids' === $settings['fields'] ) {
+			$args['fields']        = 'ids';
+			$args['no_found_rows'] = true;
+		}
 
 		$tax_query  = array( 'relation' => 'AND' );
 		$meta_query = array( 'relation' => 'AND' );
+		$archive_context = isset( $settings['archive_context'] ) && is_array( $settings['archive_context'] )
+			? $settings['archive_context']
+			: array();
+		if ( ! empty( $archive_context['tax_query'] ) && is_array( $archive_context['tax_query'] ) ) {
+			$tax_query[] = $archive_context['tax_query'];
+		}
+		if ( ! empty( $archive_context['meta_query'] ) && is_array( $archive_context['meta_query'] ) ) {
+			$meta_query[] = $archive_context['meta_query'];
+		}
+		if ( ! empty( $archive_context['search'] ) ) {
+			$args['s'] = $archive_context['search'];
+		}
+
+		$visibility = wc_get_product_visibility_term_ids();
+
+		$excluded_visibility_terms = array();
+		if ( ! empty( $visibility['exclude-from-catalog'] ) ) {
+			$excluded_visibility_terms[] = $visibility['exclude-from-catalog'];
+		}
+		if ( 'yes' === get_option( 'woocommerce_hide_out_of_stock_items' ) && ! empty( $visibility['outofstock'] ) ) {
+			$excluded_visibility_terms[] = $visibility['outofstock'];
+		}
+		if ( $excluded_visibility_terms ) {
+			$tax_query[] = array(
+				'taxonomy' => 'product_visibility',
+				'field'    => 'term_taxonomy_id',
+				'terms'    => $excluded_visibility_terms,
+				'operator' => 'NOT IN',
+			);
+		}
 
 		// Category filter.
 		if ( ! empty( $filters['category'] ) ) {
@@ -258,7 +302,7 @@ final class Ajax_Filter {
 		 * Filters the final WP_Query arguments before the catalog query runs.
 		 *
 		 * @param array $args    WP_Query arguments.
-		 * @param array $filters Sanitized filter state.
+		 * @param array $filters Sanitized catalog filter state.
 		 */
 		$args = apply_filters( 'ewcb_catalog_query_args', $args, $filters );
 
@@ -266,17 +310,26 @@ final class Ajax_Filter {
 	}
 
 	/**
-	 * Computes the min/max product price across the current taxonomy/
-	 * attribute/stock filters (ignoring the price filter itself) so the
-	 * price slider's bounds can adapt to the active category.
+	 * Computes min/max product prices for the current archive, taxonomy,
+	 * attribute, and stock filters, ignoring the active price filter.
 	 *
 	 * @param array $filters Sanitized filter state.
+	 * @param array $archive_context Active WooCommerce archive constraints.
 	 * @return array{min: float, max: float}
 	 */
-	private function get_price_bounds( $filters ) {
+	public function get_price_bounds( $filters, $archive_context = array() ) {
 		global $wpdb;
 
-		$cache_key = 'ewcb_bounds_' . md5( wp_json_encode( array( $filters['category'] ?? '', $filters['attributes'] ?? array() ) ) );
+		$cache_key = 'ewcb_bounds_' . md5(
+			wp_json_encode(
+				array(
+					$filters['category'] ?? '',
+					$filters['attributes'] ?? array(),
+					! empty( $filters['in_stock_only'] ),
+					$archive_context,
+				)
+			)
+		);
 		$cached    = get_transient( $cache_key );
 		if ( false !== $cached ) {
 			return $cached;
@@ -286,10 +339,17 @@ final class Ajax_Filter {
 		$bounds_filters              = $filters;
 		$bounds_filters['price_min'] = '';
 		$bounds_filters['price_max'] = '';
-		$bounds_filters['in_stock_only'] = false;
 
-		$query = $this->build_query( $bounds_filters, array( 'products_per_page' => -1 ), 1 );
-		$ids   = $query->posts ? wp_list_pluck( $query->posts, 'ID' ) : array();
+		$query = $this->build_query(
+			$bounds_filters,
+			array(
+				'products_per_page' => -1,
+				'fields'            => 'ids',
+				'archive_context'   => $archive_context,
+			),
+			1
+		);
+		$ids   = $query->posts ? array_map( 'absint', $query->posts ) : array();
 
 		if ( empty( $ids ) ) {
 			$bounds = array(
@@ -297,7 +357,7 @@ final class Ajax_Filter {
 				'max' => 0,
 			);
 		} else {
-			$ids_sql = implode( ',', array_map( 'absint', $ids ) );
+			$ids_sql = implode( ',', $ids );
 			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$row = $wpdb->get_row(
 				"SELECT MIN(CAST(meta_value AS DECIMAL(10,2))) AS min_price, MAX(CAST(meta_value AS DECIMAL(10,2))) AS max_price
@@ -317,9 +377,99 @@ final class Ajax_Filter {
 	}
 
 	/**
+	 * Reads and decodes a JSON-encoded AJAX request property.
+	 *
+	 * @param string $key Request property name.
+	 * @return array
+	 */
+	private function get_request_data( $key ) {
+		if ( ! isset( $_POST[ $key ] ) ) {
+			return array();
+		}
+
+		$data = wp_unslash( $_POST[ $key ] );
+		if ( is_array( $data ) ) {
+			return $data;
+		}
+
+		if ( ! is_string( $data ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Invalid catalog request data.', 'ewcb' ) ),
+				400
+			);
+		}
+
+		$decoded = json_decode( $data, true );
+		if ( ! is_array( $decoded ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Invalid catalog request data.', 'ewcb' ) ),
+				400
+			);
+		}
+
+		return $decoded;
+	}
+
+	/**
+	 * Creates a signed token for archive query data passed through the widget markup.
+	 *
+	 * @param array $context Public WooCommerce archive query context.
+	 * @return string
+	 */
+	public function create_archive_context_token( $context ) {
+		$payload = rtrim( strtr( base64_encode( wp_json_encode( $context ) ), '+/', '-_' ), '=' );
+		$token   = $payload . '.' . hash_hmac( 'sha256', $payload, wp_salt( 'auth' ) );
+
+		return $token;
+	}
+
+	/**
+	 * Verifies and decodes the signed archive query context from widget settings.
+	 *
+	 * @param string $token Signed archive context.
+	 * @return array|null
+	 */
+	private function decode_archive_context( $token ) {
+		if ( ! is_string( $token ) || strlen( $token ) > 20000 || false === strpos( $token, '.' ) ) {
+			return null;
+		}
+
+		list( $payload, $signature ) = explode( '.', $token, 2 );
+		$expected_signature          = hash_hmac( 'sha256', $payload, wp_salt( 'auth' ) );
+		if ( ! hash_equals( $expected_signature, $signature ) ) {
+			return null;
+		}
+
+		$encoded_payload = strtr( $payload, '-_', '+/' );
+		$padding         = strlen( $encoded_payload ) % 4;
+		if ( $padding ) {
+			$encoded_payload .= str_repeat( '=', 4 - $padding );
+		}
+
+		$decoded = base64_decode( $encoded_payload, true );
+		$context = false !== $decoded ? json_decode( $decoded, true ) : null;
+		if ( ! is_array( $context ) ) {
+			return null;
+		}
+
+		$sanitized = array();
+		if ( isset( $context['tax_query'] ) && is_array( $context['tax_query'] ) ) {
+			$sanitized['tax_query'] = $context['tax_query'];
+		}
+		if ( isset( $context['meta_query'] ) && is_array( $context['meta_query'] ) ) {
+			$sanitized['meta_query'] = $context['meta_query'];
+		}
+		if ( isset( $context['search'] ) && is_string( $context['search'] ) ) {
+			$sanitized['search'] = sanitize_text_field( $context['search'] );
+		}
+
+		return $sanitized;
+	}
+
+	/**
 	 * Whitelists and sanitizes the submitted filter state.
 	 *
-	 * @param array $raw Raw $_POST['filters'] data.
+	 * @param array $raw Raw filter data.
 	 * @return array
 	 */
 	private function sanitize_filters( $raw ) {
@@ -355,18 +505,20 @@ final class Ajax_Filter {
 	}
 
 	/**
-	 * Whitelists and sanitizes the submitted widget settings echoed back
-	 * from the editor (only what's needed to render a consistent card).
+	 * Whitelists and sanitizes widget settings sent from the browser.
 	 *
-	 * @param array $raw Raw $_POST['settings'] data.
+	 * @param array $raw Raw widget settings.
 	 * @return array
 	 */
 	private function sanitize_widget_settings( $raw ) {
+		$products_per_page = isset( $raw['products_per_page'] ) ? absint( $raw['products_per_page'] ) : 12;
+
 		return array(
 			'layout_preset'      => isset( $raw['layout_preset'] ) ? sanitize_key( $raw['layout_preset'] ) : 'minimal_modern',
-			'products_per_page'  => isset( $raw['products_per_page'] ) ? absint( $raw['products_per_page'] ) : 12,
+			'products_per_page'  => min( 48, max( 1, $products_per_page ) ),
 			'orderby'            => isset( $raw['orderby'] ) ? sanitize_key( $raw['orderby'] ) : 'menu_order',
 			'image_ratio'        => isset( $raw['image_ratio'] ) ? sanitize_text_field( $raw['image_ratio'] ) : '1/1',
+			'archive_context'    => isset( $raw['archive_context'] ) ? $this->decode_archive_context( $raw['archive_context'] ) : array(),
 			'show_quick_view'    => ! empty( $raw['show_quick_view'] ),
 			'show_wishlist'      => ! empty( $raw['show_wishlist'] ),
 			'show_compare'       => ! empty( $raw['show_compare'] ),
