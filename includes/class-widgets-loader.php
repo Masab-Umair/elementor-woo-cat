@@ -28,6 +28,7 @@ final class Widgets_Loader {
 		require_once EWCB_PLUGIN_DIR . 'widgets/class-widget-single-product.php';
 
 		$widgets_manager->register( new \Elementor_Woo_Catalog_Builder\Widgets\Widget_Product_Catalog() );
+		$widgets_manager->register( new \Elementor_Woo_Catalog_Builder\Widgets\Widget_Archive_Product_Catalog() );
 		$widgets_manager->register( new \Elementor_Woo_Catalog_Builder\Widgets\Widget_Single_Product() );
 	}
 }

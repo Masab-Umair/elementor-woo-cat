@@ -4,9 +4,11 @@ A WooCommerce extension for Elementor that brings pixel-perfect product catalogs
 
 ## Overview
 
-Elementor Woo Catalog Builder adds two native Elementor widgets built specifically for WooCommerce stores that want full design control without leaving the page editor:
+Elementor Woo Catalog Builder adds three native Elementor widgets built specifically for WooCommerce stores that want full design control without leaving the page editor:
 
-**Product Catalog** — A responsive product grid or slider with independent styling controls for its card, image, category, title, price, action icons, and add-to-cart button. Configure image sizing and positioning, hide categories, choose when and where action icons appear, and style text spacing, backgrounds, borders, and shadows without being locked to a preset.
+**Product Catalog** — A responsive product grid or slider with configurable product queries, including category, featured, on-sale, best-selling, top-rated, and selected product IDs. It includes independent styling controls for its card, image, category, title, price, action icons, and add-to-cart button.
+
+**Archive Product Catalog** — An archive-aware version for Elementor WooCommerce shop and product-category archive templates. It displays the current archive's products while allowing the grid and product cards to be designed in Elementor.
 
 **Single Product Showcase** — A clean single-product layout with a configurable multi-image gallery (vertical thumbnails, horizontal thumbnails, or swipe dots), layout alignment options, and an optional sticky add-to-cart bar.
 
@@ -19,6 +21,9 @@ Most WooCommerce + Elementor integrations fall into one of two camps: rigid them
 ## Features
 
 - Independently configurable column counts at desktop, tablet, and mobile breakpoints
+- Product query controls for current archives, product categories, featured/on-sale/best-selling/top-rated products, and included/excluded product IDs
+- Dedicated Archive Product Catalog widget for designing shop and product-category archive product grids
+- Bottom-aligned add-to-cart buttons across cards with different title lengths, with an option to keep buttons in normal content flow
 - Grid-to-slider toggle with autoplay, loop, arrows, and dot navigation
 - AJAX left-sidebar filtering by category, price range, product attributes, and stock status, backed by transient-cached WooCommerce queries
 - Higher-resolution product images, adjustable image aspect ratios, contain/cover/scale-down/fill fit, and image position/padding controls

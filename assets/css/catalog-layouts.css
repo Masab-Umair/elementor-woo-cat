@@ -51,6 +51,7 @@
 	grid-template-columns: repeat(var(--ewcb-columns), 1fr);
 	row-gap: var(--ewcb-row-gap);
 	column-gap: var(--ewcb-col-gap);
+	align-items: stretch;
 }
 
 .ewcb-no-products {
@@ -66,6 +67,7 @@
  * ------------------------------------------------------------------ */
 .ewcb-grid--slider {
 	display: flex;
+	align-items: stretch;
 	overflow-x: auto;
 	scroll-snap-type: x mandatory;
 	gap: var(--ewcb-col-gap);
@@ -133,6 +135,7 @@
 	position: relative;
 	display: flex;
 	flex-direction: column;
+	height: 100%;
 	background: #fff;
 	overflow: hidden;
 	transition: transform 0.25s ease, box-shadow 0.25s ease;
@@ -285,6 +288,7 @@
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
+	flex: 1 1 auto;
 }
 
 .ewcb-card__cat {
@@ -325,10 +329,23 @@
 	display: flex;
 	margin-top: 10px;
 }
-.ewcb-card__cart--inline {
-	align-self: flex-start;
+.ewcb-card--cart-bottom .ewcb-card__cart {
+	margin-top: auto;
+	padding-top: 10px;
 }
-.ewcb-layout .ewcb-add-to-cart {
+.ewcb-card__cart--align-left {
+	justify-content: flex-start;
+}
+.ewcb-card__cart--align-center {
+	justify-content: center;
+}
+.ewcb-card__cart--align-right {
+	justify-content: flex-end;
+}
+.ewcb-card__cart--inline {
+	width: 100%;
+}
+:where(.ewcb-layout) .ewcb-add-to-cart {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -345,7 +362,7 @@
 	transition: background-color 0.2s ease, color 0.2s ease;
 	width: 100%;
 }
-.ewcb-layout .ewcb-card__cart--inline .ewcb-add-to-cart {
+:where(.ewcb-layout) .ewcb-card__cart--inline .ewcb-add-to-cart {
 	width: auto;
 }
 .ewcb-add-to-cart__text {

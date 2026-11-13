@@ -86,6 +86,7 @@ class Widget_Product_Catalog extends Widget_Base {
 	 */
 	protected function register_controls() {
 		$this->register_content_layout_controls();
+		$this->register_content_query_controls();
 		$this->register_content_filter_controls();
 		$this->register_content_card_controls();
 		$this->register_style_grid_controls();
@@ -217,6 +218,21 @@ class Widget_Product_Catalog extends Widget_Base {
 					'newest'      => __( 'Newest First', 'ewcb' ),
 					'price_low'   => __( 'Price: Low to High', 'ewcb' ),
 					'price_high'  => __( 'Price: High to Low', 'ewcb' ),
+					'rating'      => __( 'Rating', 'ewcb' ),
+				),
+			)
+		);
+
+		$this->add_control(
+			'order',
+			array(
+				'label'   => __( 'Sort Direction', 'ewcb' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'default',
+				'options' => array(
+					'default' => __( 'Automatic', 'ewcb' ),
+					'ASC'     => __( 'Ascending', 'ewcb' ),
+					'DESC'    => __( 'Descending', 'ewcb' ),
 				),
 			)
 		);
@@ -292,6 +308,97 @@ class Widget_Product_Catalog extends Widget_Base {
 				'label'   => __( 'Show Dots', 'ewcb' ),
 				'type'    => Controls_Manager::SWITCHER,
 				'default' => 'yes',
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	/**
+	 * Product query source and selection controls.
+	 *
+	 * @return void
+	 */
+	private function register_content_query_controls() {
+		if ( $this->is_archive_catalog_widget() ) {
+			return;
+		}
+
+		$this->start_controls_section(
+			'section_query',
+			array(
+				'label' => __( 'Product Query', 'ewcb' ),
+				'tab'   => Controls_Manager::TAB_CONTENT,
+			)
+		);
+
+		$this->add_control(
+			'query_source',
+			array(
+				'label'       => __( 'Query Source', 'ewcb' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'auto',
+				'options'     => array(
+					'auto'    => __( 'Automatic (use archive when available)', 'ewcb' ),
+					'archive' => __( 'Current Product Archive', 'ewcb' ),
+					'custom'  => __( 'Custom Query', 'ewcb' ),
+				),
+				'description' => __( 'Use the current shop/category archive products, or configure a separate product query below.', 'ewcb' ),
+			)
+		);
+
+		$this->add_control(
+			'query_mode',
+			array(
+				'label'     => __( 'Products to Include', 'ewcb' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'all',
+				'options'   => array(
+					'all'         => __( 'All Products', 'ewcb' ),
+					'category'    => __( 'Products from Categories', 'ewcb' ),
+					'featured'    => __( 'Featured Products', 'ewcb' ),
+					'on_sale'     => __( 'On Sale', 'ewcb' ),
+					'best_selling' => __( 'Best Selling', 'ewcb' ),
+					'top_rated'   => __( 'Top Rated', 'ewcb' ),
+				),
+				'condition' => array( 'query_source!' => 'archive' ),
+			)
+		);
+
+		$this->add_control(
+			'query_categories',
+			array(
+				'label'       => __( 'Categories', 'ewcb' ),
+				'type'        => Controls_Manager::SELECT2,
+				'label_block' => true,
+				'multiple'    => true,
+				'options'     => $this->get_product_category_options(),
+				'condition'   => array(
+					'query_source!' => 'archive',
+					'query_mode'    => 'category',
+				),
+			)
+		);
+
+		$this->add_control(
+			'include_products',
+			array(
+				'label'       => __( 'Include Product IDs', 'ewcb' ),
+				'type'        => Controls_Manager::TEXT,
+				'label_block' => true,
+				'description' => __( 'Optional comma-separated product IDs. When set, only these products are queried.', 'ewcb' ),
+				'condition'   => array( 'query_source!' => 'archive' ),
+			)
+		);
+
+		$this->add_control(
+			'exclude_products',
+			array(
+				'label'       => __( 'Exclude Product IDs', 'ewcb' ),
+				'type'        => Controls_Manager::TEXT,
+				'label_block' => true,
+				'description' => __( 'Optional comma-separated product IDs to leave out of the results.', 'ewcb' ),
+				'condition'   => array( 'query_source!' => 'archive' ),
 			)
 		);
 
@@ -601,6 +708,20 @@ class Widget_Product_Catalog extends Widget_Base {
 					'full'   => __( 'Full Width', 'ewcb' ),
 					'inline' => __( 'Inline', 'ewcb' ),
 				),
+			)
+		);
+
+		$this->add_control(
+			'cart_vertical_alignment',
+			array(
+				'label'       => __( 'Button Vertical Alignment', 'ewcb' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'bottom',
+				'options'     => array(
+					'bottom' => __( 'Align Buttons at Bottom', 'ewcb' ),
+					'flow'   => __( 'Place After Product Details', 'ewcb' ),
+				),
+				'description' => __( 'Bottom alignment keeps add-to-cart buttons level when product titles have different lengths.', 'ewcb' ),
 			)
 		);
 
@@ -1412,13 +1533,20 @@ class Widget_Product_Catalog extends Widget_Base {
 			array(
 				'label'   => __( 'Button Alignment', 'ewcb' ),
 				'type'    => Controls_Manager::CHOOSE,
+				'default' => 'center',
 				'options' => array(
-					'flex-start' => array( 'title' => __( 'Left', 'ewcb' ), 'icon' => 'eicon-h-align-left' ),
-					'center'     => array( 'title' => __( 'Center', 'ewcb' ), 'icon' => 'eicon-h-align-center' ),
-					'flex-end'   => array( 'title' => __( 'Right', 'ewcb' ), 'icon' => 'eicon-h-align-right' ),
+					'left'   => array( 'title' => __( 'Left', 'ewcb' ), 'icon' => 'eicon-h-align-left' ),
+					'center' => array( 'title' => __( 'Center', 'ewcb' ), 'icon' => 'eicon-h-align-center' ),
+					'right'  => array( 'title' => __( 'Right', 'ewcb' ), 'icon' => 'eicon-h-align-right' ),
+				),
+				'selectors_dictionary' => array(
+					'left'   => 'flex-start',
+					'center' => 'center',
+					'right'  => 'flex-end',
 				),
 				'selectors' => array(
-					'{{WRAPPER}} .ewcb-card__cart:not(.ewcb-card__cart--inline) .ewcb-add-to-cart' => 'justify-content: {{VALUE}};',
+					'{{WRAPPER}} .ewcb-card__cart' => 'justify-content: {{VALUE}};',
+					'{{WRAPPER}} .ewcb-add-to-cart' => 'justify-content: {{VALUE}};',
 				),
 			)
 		);
@@ -1499,14 +1627,53 @@ class Widget_Product_Catalog extends Widget_Base {
 	}
 
 	/**
+	 * Builds a term ID => category label map for product query controls.
+	 *
+	 * @return array<int,string>
+	 */
+	private function get_product_category_options() {
+		$options = array();
+		$terms   = get_terms(
+			array(
+				'taxonomy'   => 'product_cat',
+				'hide_empty' => false,
+			)
+		);
+
+		if ( is_wp_error( $terms ) ) {
+			return $options;
+		}
+
+		foreach ( $terms as $term ) {
+			$options[ $term->term_id ] = $term->name;
+		}
+
+		return $options;
+	}
+
+	/**
+	 * Whether this widget is dedicated to using the current product archive.
+	 *
+	 * @return bool
+	 */
+	protected function is_archive_catalog_widget() {
+		return false;
+	}
+
+	/**
 	 * Captures the active WooCommerce archive constraints for this widget.
 	 *
 	 * @return array
 	 */
-	private function get_archive_query_context() {
+	protected function get_archive_query_context() {
 		global $wp_query;
 
 		if ( ! $wp_query instanceof \WP_Query ) {
+			return array();
+		}
+
+		$settings = $this->get_settings_for_display();
+		if ( ! $this->is_archive_catalog_widget() && 'custom' === $settings['query_source'] ) {
 			return array();
 		}
 
@@ -1517,10 +1684,27 @@ class Widget_Product_Catalog extends Widget_Base {
 			&& ( 'product' === $post_type || ( is_array( $post_type ) && in_array( 'product', $post_type, true ) ) );
 
 		if ( ! $is_shop_archive && ! $is_product_taxonomy && ! $is_product_search ) {
+			if ( ! $this->is_archive_catalog_widget() && 'archive' !== $settings['query_source'] ) {
+				return array();
+			}
+
+			$queried_object = get_queried_object();
+			if ( $queried_object instanceof \WP_Term && taxonomy_exists( $queried_object->taxonomy ) ) {
+				return array(
+					'is_archive' => true,
+					'tax_query' => array(
+						array(
+							'taxonomy' => $queried_object->taxonomy,
+							'field'    => 'term_id',
+							'terms'    => array( absint( $queried_object->term_id ) ),
+						),
+					),
+				);
+			}
 			return array();
 		}
 
-		$context = array();
+		$context = array( 'is_archive' => true );
 		if ( isset( $wp_query->tax_query->queries ) && is_array( $wp_query->tax_query->queries ) ) {
 			$context['tax_query'] = $wp_query->tax_query->queries;
 		}
@@ -1564,6 +1748,12 @@ class Widget_Product_Catalog extends Widget_Base {
 		$card_settings = array(
 			'products_per_page' => $settings['products_per_page'],
 			'orderby'           => $settings['orderby'],
+			'order'             => $settings['order'],
+			'query_source'      => isset( $settings['query_source'] ) ? $settings['query_source'] : 'auto',
+			'query_mode'        => isset( $settings['query_mode'] ) ? $settings['query_mode'] : 'all',
+			'query_categories'  => isset( $settings['query_categories'] ) ? $settings['query_categories'] : array(),
+			'include_products'  => isset( $settings['include_products'] ) ? $settings['include_products'] : '',
+			'exclude_products'  => isset( $settings['exclude_products'] ) ? $settings['exclude_products'] : '',
 			'image_ratio'       => $settings['image_ratio'],
 			'show_category'     => 'yes' === $settings['show_category'],
 			'show_quick_view'   => 'yes' === $settings['show_quick_view'],
@@ -1576,7 +1766,13 @@ class Widget_Product_Catalog extends Widget_Base {
 			'action_icon_layout' => $settings['action_icon_layout'],
 			'show_cart_icon'    => 'yes' === $settings['show_cart_icon'],
 			'cart_button_width' => $settings['cart_button_width'],
+			'cart_vertical_alignment' => $settings['cart_vertical_alignment'],
+			'button_alignment' => $settings['button_alignment'],
 		);
+		if ( $this->is_archive_catalog_widget() ) {
+			$card_settings['query_source'] = 'archive';
+			$card_settings['query_mode']   = 'all';
+		}
 
 		$ajax_filter     = \Elementor_Woo_Catalog_Builder\Ajax_Filter::instance();
 		$archive_context = $this->get_archive_query_context();
@@ -1766,5 +1962,41 @@ class Widget_Product_Catalog extends Widget_Base {
 			</div>
 		</aside>
 		<?php
+	}
+}
+
+/**
+ * Archive-aware catalog for Elementor WooCommerce archive templates.
+ */
+class Widget_Archive_Product_Catalog extends Widget_Product_Catalog {
+
+	/**
+	 * @return string
+	 */
+	public function get_name() {
+		return 'ewcb-archive-product-catalog';
+	}
+
+	/**
+	 * @return string
+	 */
+	public function get_title() {
+		return __( 'Archive Product Catalog', 'ewcb' );
+	}
+
+	/**
+	 * @return string[]
+	 */
+	public function get_keywords() {
+		return array( 'woocommerce', 'archive', 'category', 'products', 'catalog', 'shop' );
+	}
+
+	/**
+	 * Always use the current product archive query.
+	 *
+	 * @return bool
+	 */
+	protected function is_archive_catalog_widget() {
+		return true;
 	}
 }

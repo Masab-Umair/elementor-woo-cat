@@ -45,6 +45,9 @@ final class Render_Helpers {
 		if ( ! isset( $settings['image_hover_zoom'] ) || ! empty( $settings['image_hover_zoom'] ) ) {
 			$card_classes[] = 'ewcb-card--hover-zoom';
 		}
+		if ( ! isset( $settings['cart_vertical_alignment'] ) || 'bottom' === $settings['cart_vertical_alignment'] ) {
+			$card_classes[] = 'ewcb-card--cart-bottom';
+		}
 		if ( $hover_swap && $second_img ) {
 			$card_classes[] = 'ewcb-card--has-hover-img';
 		}
@@ -95,7 +98,7 @@ final class Render_Helpers {
 
 				<div class="ewcb-card__price"><?php echo wp_kses_post( $product->get_price_html() ); ?></div>
 
-				<div class="ewcb-card__cart<?php echo isset( $settings['cart_button_width'] ) && 'inline' === $settings['cart_button_width'] ? ' ewcb-card__cart--inline' : ''; ?>">
+				<div class="ewcb-card__cart<?php echo isset( $settings['cart_button_width'] ) && 'inline' === $settings['cart_button_width'] ? ' ewcb-card__cart--inline' : ''; ?> ewcb-card__cart--align-<?php echo esc_attr( isset( $settings['button_alignment'] ) && in_array( $settings['button_alignment'], array( 'left', 'center', 'right' ), true ) ? $settings['button_alignment'] : 'center' ); ?>">
 					<?php
 					$cart_icon = '';
 					if ( ! empty( $settings['show_cart_icon'] ) ) {
@@ -168,7 +171,7 @@ final class Render_Helpers {
 	 */
 	public static function icon( $name ) {
 		$icons = array(
-			'heart'         => '<path d="M12 21s-7.5-4.6-10-9.1C.4 8.7 1.9 5 5.4 5c2 0 3.3 1 4.6 2.6C11.3 6 12.6 5 14.6 5 18.1 5 19.6 8.7 22 11.9 19.5 16.4 12 21 12 21z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
+			'heart'         => '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
 			'compare'       => '<path d="M7 3v14M7 17l-3-3M7 17l3-3M17 21V7M17 7l-3 3M17 7l3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
 			'eye'           => '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>',
 			'cart'          => '<path d="M3 4h2l2.4 12.2a2 2 0 002 1.8h8.2a2 2 0 002-1.7L21 8H6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="21" r="1.4" fill="currentColor"/><circle cx="18" cy="21" r="1.4" fill="currentColor"/>',

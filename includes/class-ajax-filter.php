@@ -197,6 +197,9 @@ final class Ajax_Filter {
 		$archive_context = isset( $settings['archive_context'] ) && is_array( $settings['archive_context'] )
 			? $settings['archive_context']
 			: array();
+		if ( isset( $settings['query_source'] ) && 'archive' === $settings['query_source'] && empty( $archive_context['is_archive'] ) ) {
+			$args['post__in'] = array( 0 );
+		}
 		if ( ! empty( $archive_context['tax_query'] ) && is_array( $archive_context['tax_query'] ) ) {
 			$tax_query[] = $archive_context['tax_query'];
 		}
@@ -208,6 +211,47 @@ final class Ajax_Filter {
 		}
 
 		$visibility = wc_get_product_visibility_term_ids();
+		$query_source = isset( $settings['query_source'] ) ? $settings['query_source'] : 'auto';
+		$query_mode   = 'archive' === $query_source ? 'all' : ( isset( $settings['query_mode'] ) ? $settings['query_mode'] : 'all' );
+		$product_ids = static function ( $value ) {
+			$values = is_array( $value ) ? $value : preg_split( '/[\s,]+/', (string) $value );
+			return array_values( array_unique( array_filter( array_map( 'absint', $values ) ) ) );
+		};
+		$selected_ids = 'archive' !== $query_source && isset( $settings['include_products'] ) ? $product_ids( $settings['include_products'] ) : array();
+		$excluded_ids = 'archive' !== $query_source && isset( $settings['exclude_products'] ) ? $product_ids( $settings['exclude_products'] ) : array();
+
+		if ( $selected_ids ) {
+			$args['post__in'] = array_values( array_unique( $selected_ids ) );
+		}
+		if ( $excluded_ids ) {
+			$args['post__not_in'] = array_values( array_unique( $excluded_ids ) );
+		}
+
+		if ( 'category' === $query_mode ) {
+			$category_ids = isset( $settings['query_categories'] ) ? array_filter( array_map( 'absint', (array) $settings['query_categories'] ) ) : array();
+			$tax_query[] = $category_ids
+				? array(
+					'taxonomy'         => 'product_cat',
+					'field'            => 'term_id',
+					'terms'            => array_values( array_unique( $category_ids ) ),
+					'include_children' => true,
+				)
+				: array(
+					'taxonomy' => 'product_cat',
+					'field'    => 'term_id',
+					'terms'    => array( 0 ),
+				);
+		} elseif ( 'featured' === $query_mode ) {
+			$tax_query[] = array(
+				'taxonomy' => 'product_visibility',
+				'field'    => 'term_taxonomy_id',
+				'terms'    => array( ! empty( $visibility['featured'] ) ? $visibility['featured'] : 0 ),
+			);
+		} elseif ( 'on_sale' === $query_mode ) {
+			$sale_ids = array_map( 'absint', wc_get_product_ids_on_sale() );
+			$matching_sale_ids = $selected_ids ? array_values( array_intersect( $selected_ids, $sale_ids ) ) : $sale_ids;
+			$args['post__in'] = $matching_sale_ids ? $matching_sale_ids : array( 0 );
+		}
 
 		$excluded_visibility_terms = array();
 		if ( ! empty( $visibility['exclude-from-catalog'] ) ) {
@@ -274,28 +318,45 @@ final class Ajax_Filter {
 			$args['meta_query'] = $meta_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 		}
 
+		$sort_order = isset( $settings['order'] ) && in_array( $settings['order'], array( 'ASC', 'DESC' ), true ) ? $settings['order'] : null;
 		switch ( ! empty( $settings['orderby'] ) ? $settings['orderby'] : 'menu_order' ) {
 			case 'price_low':
 				$args['orderby']  = 'meta_value_num';
 				$args['meta_key'] = '_price'; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-				$args['order']    = 'ASC';
+				$args['order']    = $sort_order ? $sort_order : 'ASC';
 				break;
 			case 'price_high':
 				$args['orderby']  = 'meta_value_num';
 				$args['meta_key'] = '_price'; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-				$args['order']    = 'DESC';
+				$args['order']    = $sort_order ? $sort_order : 'DESC';
 				break;
 			case 'newest':
 				$args['orderby'] = 'date';
-				$args['order']   = 'DESC';
+				$args['order']   = $sort_order ? $sort_order : 'DESC';
 				break;
 			case 'popularity':
 				$args['meta_key'] = 'total_sales'; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 				$args['orderby']  = 'meta_value_num';
-				$args['order']    = 'DESC';
+				$args['order']    = $sort_order ? $sort_order : 'DESC';
+				break;
+			case 'rating':
+				$args['meta_key'] = '_wc_average_rating'; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				$args['orderby']  = 'meta_value_num';
+				$args['order']    = $sort_order ? $sort_order : 'DESC';
 				break;
 			default:
-				$args['orderby'] = array( 'menu_order' => 'ASC', 'title' => 'ASC' );
+				$sort_order      = $sort_order ? $sort_order : 'ASC';
+				$args['orderby'] = array( 'menu_order' => $sort_order, 'title' => $sort_order );
+		}
+
+		if ( 'best_selling' === $query_mode ) {
+			$args['meta_key'] = 'total_sales'; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+			$args['orderby']  = 'meta_value_num';
+			$args['order']    = 'DESC';
+		} elseif ( 'top_rated' === $query_mode ) {
+			$args['meta_key'] = '_wc_average_rating'; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+			$args['orderby']  = 'meta_value_num';
+			$args['order']    = 'DESC';
 		}
 
 		/**
@@ -453,6 +514,9 @@ final class Ajax_Filter {
 		}
 
 		$sanitized = array();
+		if ( ! empty( $context['is_archive'] ) ) {
+			$sanitized['is_archive'] = true;
+		}
 		if ( isset( $context['tax_query'] ) && is_array( $context['tax_query'] ) ) {
 			$sanitized['tax_query'] = $context['tax_query'];
 		}
@@ -512,10 +576,21 @@ final class Ajax_Filter {
 	 */
 	private function sanitize_widget_settings( $raw ) {
 		$products_per_page = isset( $raw['products_per_page'] ) ? absint( $raw['products_per_page'] ) : 12;
+		$ids = static function ( $value ) {
+			$values = is_array( $value ) ? $value : preg_split( '/[\s,]+/', (string) $value );
+			return array_values( array_unique( array_filter( array_map( 'absint', $values ) ) ) );
+		};
+		$order = isset( $raw['order'] ) && is_string( $raw['order'] ) ? strtoupper( sanitize_text_field( $raw['order'] ) ) : '';
 
 		return array(
 			'products_per_page'  => min( 48, max( 1, $products_per_page ) ),
 			'orderby'            => isset( $raw['orderby'] ) ? sanitize_key( $raw['orderby'] ) : 'menu_order',
+			'order'              => in_array( $order, array( 'ASC', 'DESC' ), true ) ? $order : 'default',
+			'query_source'       => isset( $raw['query_source'] ) && in_array( $raw['query_source'], array( 'archive', 'custom' ), true ) ? $raw['query_source'] : 'auto',
+			'query_mode'         => isset( $raw['query_mode'] ) && in_array( $raw['query_mode'], array( 'all', 'category', 'featured', 'on_sale', 'best_selling', 'top_rated' ), true ) ? $raw['query_mode'] : 'all',
+			'query_categories'   => isset( $raw['query_categories'] ) ? $ids( $raw['query_categories'] ) : array(),
+			'include_products'   => isset( $raw['include_products'] ) ? $ids( $raw['include_products'] ) : array(),
+			'exclude_products'   => isset( $raw['exclude_products'] ) ? $ids( $raw['exclude_products'] ) : array(),
 			'image_ratio'        => isset( $raw['image_ratio'] ) ? sanitize_text_field( $raw['image_ratio'] ) : '1/1',
 			'archive_context'    => isset( $raw['archive_context'] ) ? $this->decode_archive_context( $raw['archive_context'] ) : array(),
 			'show_category'      => ! isset( $raw['show_category'] ) || ! empty( $raw['show_category'] ),
@@ -529,6 +604,8 @@ final class Ajax_Filter {
 			'action_icon_layout' => isset( $raw['action_icon_layout'] ) && 'horizontal' === $raw['action_icon_layout'] ? 'horizontal' : 'vertical',
 			'show_cart_icon'     => ! empty( $raw['show_cart_icon'] ),
 			'cart_button_width'  => isset( $raw['cart_button_width'] ) && 'inline' === $raw['cart_button_width'] ? 'inline' : 'full',
+			'cart_vertical_alignment' => isset( $raw['cart_vertical_alignment'] ) && 'flow' === $raw['cart_vertical_alignment'] ? 'flow' : 'bottom',
+			'button_alignment'   => isset( $raw['button_alignment'] ) && in_array( $raw['button_alignment'], array( 'left', 'center', 'right' ), true ) ? $raw['button_alignment'] : 'center',
 		);
 	}
 
