@@ -3,8 +3,8 @@
  *
  * All visual values that are editable from the Elementor panel are driven
  * by inline CSS custom properties set per-widget instance (see the
- * `selectors` on each Elementor control). This file only supplies layout
- * mechanics, sane fallback values, and the five catalog presets.
+ * `selectors` on each Elementor control). This file supplies layout
+ * mechanics and sensible, preset-free fallbacks.
  */
 
 /* ------------------------------------------------------------------ *
@@ -147,7 +147,7 @@
 	overflow: hidden;
 	background: #f4f4f4;
 }
-.ewcb-card__media[style*="--ewcb-ratio:auto"] {
+.ewcb-layout .ewcb-card__media[style*="--ewcb-ratio:auto"] {
 	aspect-ratio: auto;
 }
 
@@ -157,12 +157,23 @@
 	height: 100%;
 }
 
-.ewcb-card__img {
+.ewcb-layout .ewcb-card__media .ewcb-card__img {
 	width: 100%;
 	height: 100%;
+	max-width: none;
 	object-fit: contain;
+	object-position: center center;
 	display: block;
 	transition: opacity 0.35s ease, transform 0.5s ease;
+}
+
+.ewcb-layout .ewcb-card__media[style*="--ewcb-ratio:auto"] .ewcb-card__media-link,
+.ewcb-layout .ewcb-card__media[style*="--ewcb-ratio:auto"] .ewcb-card__img {
+	height: auto;
+}
+
+.ewcb-layout .ewcb-card__media[style*="--ewcb-ratio:auto"] .ewcb-card__img {
+	object-fit: initial;
 }
 
 .ewcb-card__img--hover {
@@ -177,7 +188,7 @@
 	opacity: 1;
 }
 
-.ewcb-card:hover .ewcb-card__img--primary:not(.ewcb-card--has-hover-img *) {
+.ewcb-card--hover-zoom:hover .ewcb-card__img--primary:not(.ewcb-card--has-hover-img *) {
 	transform: scale(1.04);
 }
 
@@ -197,25 +208,46 @@
 }
 
 .ewcb-card__actions {
+	--ewcb-action-inset: 12px;
 	position: absolute;
-	top: 12px;
-	right: 12px;
+	top: var(--ewcb-action-inset);
+	right: var(--ewcb-action-inset);
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-	opacity: 0;
-	transform: translateX(6px);
 	transition: opacity 0.2s ease, transform 0.2s ease;
 	z-index: 2;
 }
-.ewcb-card:hover .ewcb-card__actions,
-.ewcb-card:focus-within .ewcb-card__actions {
+.ewcb-card__actions--hover {
+	opacity: 0;
+	transform: translateX(6px);
+}
+.ewcb-card:hover .ewcb-card__actions--hover,
+.ewcb-card:focus-within .ewcb-card__actions--hover {
 	opacity: 1;
 	transform: translateX(0);
 }
 
+.ewcb-card__actions--top-left {
+	right: auto;
+	left: var(--ewcb-action-inset);
+}
+.ewcb-card__actions--bottom-right {
+	top: auto;
+	bottom: var(--ewcb-action-inset);
+}
+.ewcb-card__actions--bottom-left {
+	top: auto;
+	right: auto;
+	bottom: var(--ewcb-action-inset);
+	left: var(--ewcb-action-inset);
+}
+.ewcb-card__actions--horizontal {
+	flex-direction: row;
+}
+
 @media (hover: none) {
-	.ewcb-card__actions {
+	.ewcb-card__actions--hover {
 		opacity: 1;
 		transform: none;
 	}
@@ -234,6 +266,12 @@
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 	color: #1a1a1a;
 	transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+.ewcb-icon {
+	display: block;
+	width: 18px;
+	height: 18px;
+	flex: 0 0 auto;
 }
 .ewcb-icon-btn:hover {
 	transform: translateY(-2px);
@@ -284,10 +322,17 @@
 }
 
 .ewcb-card__cart {
+	display: flex;
 	margin-top: 10px;
 }
-.ewcb-add-to-cart {
-	display: inline-block;
+.ewcb-card__cart--inline {
+	align-self: flex-start;
+}
+.ewcb-layout .ewcb-card .ewcb-card__cart .ewcb-add-to-cart {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
 	font-size: 13px;
 	font-weight: 600;
 	text-align: center;
@@ -300,6 +345,12 @@
 	transition: background-color 0.2s ease, color 0.2s ease;
 	width: 100%;
 }
+.ewcb-layout .ewcb-card .ewcb-card__cart--inline .ewcb-add-to-cart {
+	width: auto;
+}
+.ewcb-add-to-cart__text {
+	display: inline;
+}
 .ewcb-add-to-cart:hover {
 	background: #fff;
 	color: #1a1a1a;
@@ -309,108 +360,15 @@
 	pointer-events: none;
 }
 .ewcb-add-to-cart.added::after {
-	content: "\2713";
-	margin-left: 6px;
+	content: "";
+	display: inline-block;
+	width: 6px;
+	height: 11px;
+	border: solid currentColor;
+	border-width: 0 2px 2px 0;
+	transform: rotate(45deg);
+	margin-left: 2px;
 }
-
-/* ------------------------------------------------------------------ *
- * PRESET 1 — Minimal Modern (default — clean, generous whitespace)
- * ------------------------------------------------------------------ */
-.ewcb-preset-minimal_modern .ewcb-card {
-	border-radius: 6px;
-}
-.ewcb-preset-minimal_modern .ewcb-card__body {
-	padding-top: 18px;
-}
-
-/* ------------------------------------------------------------------ *
- * PRESET 2 — Luxury Card (deep shadow, serif-friendly spacing, centered)
- * ------------------------------------------------------------------ */
-.ewcb-preset-luxury_card .ewcb-card {
-	border-radius: 2px;
-	box-shadow: 0 12px 30px rgba(0, 0, 0, 0.07);
-}
-.ewcb-preset-luxury_card .ewcb-card__body {
-	text-align: center;
-	padding: 24px 12px 16px;
-}
-.ewcb-preset-luxury_card .ewcb-card__cat {
-	font-size: 10px;
-}
-.ewcb-preset-luxury_card .ewcb-card__title {
-	font-size: 16px;
-	letter-spacing: 0.01em;
-}
-.ewcb-preset-luxury_card .ewcb-add-to-cart {
-	width: auto;
-	padding: 10px 28px;
-	border-radius: 0;
-}
-
-/* ------------------------------------------------------------------ *
- * PRESET 3 — Compact Grid (tight spacing, higher density)
- * ------------------------------------------------------------------ */
-.ewcb-preset-compact_grid .ewcb-grid--grid {
-	row-gap: calc(var(--ewcb-row-gap) * 0.5);
-	column-gap: calc(var(--ewcb-col-gap) * 0.5);
-}
-.ewcb-preset-compact_grid .ewcb-card__body {
-	padding: 10px 2px 2px;
-	gap: 2px;
-}
-.ewcb-preset-compact_grid .ewcb-card__title {
-	font-size: 13px;
-}
-.ewcb-preset-compact_grid .ewcb-card__price {
-	font-size: 12px;
-}
-.ewcb-preset-compact_grid .ewcb-add-to-cart {
-	padding: 7px 12px;
-	font-size: 12px;
-}
-
-/* ------------------------------------------------------------------ *
- * PRESET 4 — Editorial (asymmetric, magazine-style type emphasis)
- * ------------------------------------------------------------------ */
-.ewcb-preset-editorial .ewcb-card__body {
-	padding: 20px 0 0;
-	border-top: 1px solid #ececec;
-	margin-top: 14px;
-}
-.ewcb-preset-editorial .ewcb-card__title {
-	font-size: 18px;
-	font-weight: 400;
-	font-style: italic;
-}
-.ewcb-preset-editorial .ewcb-card__cat {
-	font-size: 10px;
-}
-.ewcb-preset-editorial .ewcb-add-to-cart {
-	background: transparent;
-	color: #1a1a1a;
-	border: none;
-	text-decoration: underline;
-	padding: 10px 0;
-	width: auto;
-}
-.ewcb-preset-editorial .ewcb-add-to-cart:hover {
-	opacity: 0.6;
-}
-
-/* ------------------------------------------------------------------ *
- * PRESET 5 — Clean Bordered (flat outline cards, no shadow)
- * ------------------------------------------------------------------ */
-.ewcb-preset-clean_bordered .ewcb-card {
-	border: 1px solid #e5e5e5;
-	border-radius: 4px;
-}
-.ewcb-preset-clean_bordered .ewcb-card__body {
-	padding: 16px;
-}
-.ewcb-preset-clean_bordered .ewcb-card__media {
-	border-bottom: 1px solid #e5e5e5;
-}
-
 /* ------------------------------------------------------------------ *
  * Pagination
  * ------------------------------------------------------------------ */

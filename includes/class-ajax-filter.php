@@ -514,15 +514,21 @@ final class Ajax_Filter {
 		$products_per_page = isset( $raw['products_per_page'] ) ? absint( $raw['products_per_page'] ) : 12;
 
 		return array(
-			'layout_preset'      => isset( $raw['layout_preset'] ) ? sanitize_key( $raw['layout_preset'] ) : 'minimal_modern',
 			'products_per_page'  => min( 48, max( 1, $products_per_page ) ),
 			'orderby'            => isset( $raw['orderby'] ) ? sanitize_key( $raw['orderby'] ) : 'menu_order',
 			'image_ratio'        => isset( $raw['image_ratio'] ) ? sanitize_text_field( $raw['image_ratio'] ) : '1/1',
 			'archive_context'    => isset( $raw['archive_context'] ) ? $this->decode_archive_context( $raw['archive_context'] ) : array(),
+			'show_category'      => ! isset( $raw['show_category'] ) || ! empty( $raw['show_category'] ),
 			'show_quick_view'    => ! empty( $raw['show_quick_view'] ),
 			'show_wishlist'      => ! empty( $raw['show_wishlist'] ),
 			'show_compare'       => ! empty( $raw['show_compare'] ),
 			'hover_image_swap'   => ! empty( $raw['hover_image_swap'] ),
+			'image_hover_zoom'  => ! isset( $raw['image_hover_zoom'] ) || ! empty( $raw['image_hover_zoom'] ),
+			'action_visibility'  => isset( $raw['action_visibility'] ) && 'hover' === $raw['action_visibility'] ? 'hover' : 'always',
+			'action_position'    => isset( $raw['action_position'] ) && in_array( $raw['action_position'], array( 'top-right', 'top-left', 'bottom-right', 'bottom-left' ), true ) ? $raw['action_position'] : 'top-right',
+			'action_icon_layout' => isset( $raw['action_icon_layout'] ) && 'horizontal' === $raw['action_icon_layout'] ? 'horizontal' : 'vertical',
+			'show_cart_icon'     => ! empty( $raw['show_cart_icon'] ),
+			'cart_button_width'  => isset( $raw['cart_button_width'] ) && 'inline' === $raw['cart_button_width'] ? 'inline' : 'full',
 		);
 	}
 

@@ -36,13 +36,15 @@ final class Render_Helpers {
 			return;
 		}
 
-		$layout      = ! empty( $settings['layout_preset'] ) ? $settings['layout_preset'] : 'minimal_modern';
 		$ratio       = ! empty( $settings['image_ratio'] ) ? $settings['image_ratio'] : '1/1';
 		$hover_swap  = ! empty( $settings['hover_image_swap'] );
 		$gallery_ids = $product->get_gallery_image_ids();
-		$second_img  = $hover_swap && ! empty( $gallery_ids ) ? wp_get_attachment_image( $gallery_ids[0], 'woocommerce_thumbnail', false, array( 'class' => 'ewcb-card__img ewcb-card__img--hover' ) ) : '';
+		$second_img  = $hover_swap && ! empty( $gallery_ids ) ? wp_get_attachment_image( $gallery_ids[0], 'woocommerce_single', false, array( 'class' => 'ewcb-card__img ewcb-card__img--hover' ) ) : '';
 
-		$card_classes = array( 'ewcb-card', 'ewcb-card--' . sanitize_html_class( $layout ) );
+		$card_classes = array( 'ewcb-card' );
+		if ( ! isset( $settings['image_hover_zoom'] ) || ! empty( $settings['image_hover_zoom'] ) ) {
+			$card_classes[] = 'ewcb-card--hover-zoom';
+		}
 		if ( $hover_swap && $second_img ) {
 			$card_classes[] = 'ewcb-card--has-hover-img';
 		}
@@ -50,7 +52,7 @@ final class Render_Helpers {
 		<div class="<?php echo esc_attr( implode( ' ', $card_classes ) ); ?>" data-product-id="<?php echo esc_attr( $product->get_id() ); ?>">
 			<div class="ewcb-card__media" style="--ewcb-ratio:<?php echo esc_attr( $ratio ); ?>;">
 				<a href="<?php echo esc_url( get_permalink( $product->get_id() ) ); ?>" class="ewcb-card__media-link" aria-label="<?php echo esc_attr( $product->get_name() ); ?>">
-					<?php echo wp_kses_post( $product->get_image( 'woocommerce_thumbnail', array( 'class' => 'ewcb-card__img ewcb-card__img--primary' ) ) ); ?>
+					<?php echo wp_kses_post( $product->get_image( 'woocommerce_single', array( 'class' => 'ewcb-card__img ewcb-card__img--primary' ) ) ); ?>
 					<?php echo wp_kses_post( $second_img ); ?>
 				</a>
 
@@ -58,7 +60,7 @@ final class Render_Helpers {
 					<span class="ewcb-card__badge ewcb-card__badge--sale"><?php esc_html_e( 'Sale', 'ewcb' ); ?></span>
 				<?php endif; ?>
 
-				<div class="ewcb-card__actions">
+				<div class="ewcb-card__actions<?php echo isset( $settings['action_visibility'] ) && 'hover' === $settings['action_visibility'] ? ' ewcb-card__actions--hover' : ''; ?> ewcb-card__actions--<?php echo esc_attr( isset( $settings['action_position'] ) ? sanitize_html_class( $settings['action_position'] ) : 'top-right' ); ?> ewcb-card__actions--<?php echo esc_attr( isset( $settings['action_icon_layout'] ) && 'horizontal' === $settings['action_icon_layout'] ? 'horizontal' : 'vertical' ); ?>">
 					<?php if ( ! empty( $settings['show_quick_view'] ) ) : ?>
 						<button type="button" class="ewcb-icon-btn ewcb-quick-view" data-product-id="<?php echo esc_attr( $product->get_id() ); ?>" aria-label="<?php esc_attr_e( 'Quick view', 'ewcb' ); ?>">
 							<?php self::icon( 'eye' ); ?>
@@ -82,7 +84,7 @@ final class Render_Helpers {
 			<div class="ewcb-card__body">
 				<?php
 				$categories = wc_get_product_category_list( $product->get_id(), ', ' );
-				if ( $categories ) :
+				if ( $categories && ( ! array_key_exists( 'show_category', $settings ) || ! empty( $settings['show_category'] ) ) ) :
 					?>
 					<div class="ewcb-card__cat"><?php echo wp_kses_post( $categories ); ?></div>
 				<?php endif; ?>
@@ -93,13 +95,46 @@ final class Render_Helpers {
 
 				<div class="ewcb-card__price"><?php echo wp_kses_post( $product->get_price_html() ); ?></div>
 
-				<div class="ewcb-card__cart">
+				<div class="ewcb-card__cart<?php echo isset( $settings['cart_button_width'] ) && 'inline' === $settings['cart_button_width'] ? ' ewcb-card__cart--inline' : ''; ?>">
 					<?php
-					echo wp_kses_post(
+					$cart_icon = '';
+					if ( ! empty( $settings['show_cart_icon'] ) ) {
+						ob_start();
+						self::icon( 'cart' );
+						$cart_icon = ob_get_clean();
+					}
+
+					$allowed_html         = wp_kses_allowed_html( 'post' );
+					$allowed_html['svg']  = array(
+						'class'       => true,
+						'viewbox'     => true,
+						'width'       => true,
+						'height'      => true,
+						'aria-hidden' => true,
+						'focusable'   => true,
+					);
+					$allowed_html['path'] = array(
+						'd'               => true,
+						'fill'            => true,
+						'stroke'          => true,
+						'stroke-width'    => true,
+						'stroke-linecap'  => true,
+						'stroke-linejoin' => true,
+					);
+					$allowed_html['circle'] = array(
+						'cx'             => true,
+						'cy'             => true,
+						'r'              => true,
+						'fill'           => true,
+						'stroke'         => true,
+						'stroke-width'   => true,
+					);
+
+					echo wp_kses(
 						apply_filters(
 							'woocommerce_loop_add_to_cart_link',
 							sprintf(
-								'<a href="%s" data-quantity="1" class="ewcb-add-to-cart button %s" %s>%s</a>',
+								'<a href="%s" data-quantity="1" class="ewcb-add-to-cart button %s" %s>%s<span class="ewcb-add-to-cart__text">%s</span></a>',
 								esc_url( $product->add_to_cart_url() ),
 								esc_attr( wc_wp_theme_get_element_class_name( 'button' ) ? 'button' : '' ),
 								wc_implode_html_attributes(
@@ -110,10 +145,12 @@ final class Render_Helpers {
 										'rel'               => 'nofollow',
 									)
 								),
+								$cart_icon, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG emitted by self::icon().
 								esc_html( $product->add_to_cart_text() )
 							),
 							$product
-						)
+						),
+						$allowed_html
 					);
 					?>
 				</div>

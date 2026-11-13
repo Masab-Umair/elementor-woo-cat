@@ -90,6 +90,8 @@ class Widget_Product_Catalog extends Widget_Base {
 		$this->register_content_card_controls();
 		$this->register_style_grid_controls();
 		$this->register_style_card_controls();
+		$this->register_style_image_controls();
+		$this->register_style_text_container_controls();
 		$this->register_style_typography_controls();
 		$this->register_style_filter_controls();
 	}
@@ -99,7 +101,7 @@ class Widget_Product_Catalog extends Widget_Base {
 	 * ------------------------------------------------------------------ */
 
 	/**
-	 * Layout preset, columns, grid/slider toggle, ordering, pagination.
+	 * Grid/slider toggle, ordering, pagination and spacing.
 	 *
 	 * @return void
 	 */
@@ -109,23 +111,6 @@ class Widget_Product_Catalog extends Widget_Base {
 			array(
 				'label' => __( 'Layout', 'ewcb' ),
 				'tab'   => Controls_Manager::TAB_CONTENT,
-			)
-		);
-
-		$this->add_control(
-			'layout_preset',
-			array(
-				'label'   => __( 'Catalog Preset', 'ewcb' ),
-				'type'    => Controls_Manager::SELECT,
-				'default' => 'minimal_modern',
-				'options' => array(
-					'minimal_modern'  => __( 'Minimal Modern', 'ewcb' ),
-					'luxury_card'     => __( 'Luxury Card', 'ewcb' ),
-					'compact_grid'    => __( 'Compact Grid', 'ewcb' ),
-					'editorial'       => __( 'Editorial', 'ewcb' ),
-					'clean_bordered'  => __( 'Clean Bordered', 'ewcb' ),
-				),
-				'prefix_class' => 'ewcb-preset-',
 			)
 		);
 
@@ -424,7 +409,7 @@ class Widget_Product_Catalog extends Widget_Base {
 	}
 
 	/**
-	 * Image aspect ratio, hover image swap, quick view / wishlist / compare toggles.
+	 * Image, category, action icon and add-to-cart display options.
 	 *
 	 * @return void
 	 */
@@ -463,13 +448,44 @@ class Widget_Product_Catalog extends Widget_Base {
 				'options'   => array(
 					'cover'   => __( 'Cover', 'ewcb' ),
 					'contain' => __( 'Contain', 'ewcb' ),
+					'scale-down' => __( 'Scale Down', 'ewcb' ),
+					'fill'    => __( 'Fill (may distort)', 'ewcb' ),
 				),
 				'condition' => array(
 					'image_ratio!' => 'auto',
 				),
 				'selectors' => array(
-					'{{WRAPPER}} .ewcb-card__img' => 'object-fit: {{VALUE}};',
+					'{{WRAPPER}} .ewcb-card__media .ewcb-card__img' => 'object-fit: {{VALUE}};',
 				),
+			)
+		);
+
+		$this->add_control(
+			'image_position',
+			array(
+				'label'     => __( 'Image Position', 'ewcb' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'center center',
+				'options'   => array(
+					'center center' => __( 'Center Center', 'ewcb' ),
+					'center top'    => __( 'Center Top', 'ewcb' ),
+					'center bottom' => __( 'Center Bottom', 'ewcb' ),
+					'left center'   => __( 'Left Center', 'ewcb' ),
+					'right center'  => __( 'Right Center', 'ewcb' ),
+				),
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-card__media .ewcb-card__img' => 'object-position: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'show_category',
+			array(
+				'label'        => __( 'Show Product Category', 'ewcb' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'default'      => 'yes',
+				'return_value' => 'yes',
 			)
 		);
 
@@ -480,6 +496,16 @@ class Widget_Product_Catalog extends Widget_Base {
 				'type'         => Controls_Manager::SWITCHER,
 				'default'      => 'yes',
 				'description'  => __( 'Fades to the product\'s second gallery image on hover, when available.', 'ewcb' ),
+				'return_value' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'image_hover_zoom',
+			array(
+				'label'        => __( 'Zoom Image on Hover', 'ewcb' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'default'      => 'yes',
 				'return_value' => 'yes',
 			)
 		);
@@ -511,6 +537,70 @@ class Widget_Product_Catalog extends Widget_Base {
 				'type'         => Controls_Manager::SWITCHER,
 				'default'      => '',
 				'return_value' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'action_visibility',
+			array(
+				'label'   => __( 'Action Icons Visibility', 'ewcb' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'always',
+				'options' => array(
+					'always' => __( 'Always Visible', 'ewcb' ),
+					'hover'  => __( 'On Hover', 'ewcb' ),
+				),
+			)
+		);
+
+		$this->add_control(
+			'action_position',
+			array(
+				'label'   => __( 'Action Icons Position', 'ewcb' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'top-right',
+				'options' => array(
+					'top-right'    => __( 'Top Right', 'ewcb' ),
+					'top-left'     => __( 'Top Left', 'ewcb' ),
+					'bottom-right' => __( 'Bottom Right', 'ewcb' ),
+					'bottom-left'  => __( 'Bottom Left', 'ewcb' ),
+				),
+			)
+		);
+
+		$this->add_control(
+			'action_icon_layout',
+			array(
+				'label'   => __( 'Action Icons Layout', 'ewcb' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'vertical',
+				'options' => array(
+					'vertical'   => __( 'Vertical', 'ewcb' ),
+					'horizontal' => __( 'Horizontal', 'ewcb' ),
+				),
+			)
+		);
+
+		$this->add_control(
+			'show_cart_icon',
+			array(
+				'label'        => __( 'Show Cart Icon in Button', 'ewcb' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'default'      => '',
+				'return_value' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'cart_button_width',
+			array(
+				'label'   => __( 'Add to Cart Width', 'ewcb' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'full',
+				'options' => array(
+					'full'   => __( 'Full Width', 'ewcb' ),
+					'inline' => __( 'Inline', 'ewcb' ),
+				),
 			)
 		);
 
@@ -592,9 +682,9 @@ class Widget_Product_Catalog extends Widget_Base {
 			array(
 				'label'      => __( 'Card Padding', 'ewcb' ),
 				'type'       => Controls_Manager::DIMENSIONS,
-				'size_units' => array( 'px', 'em' ),
+				'size_units' => array( 'px', 'em', '%' ),
 				'selectors'  => array(
-					'{{WRAPPER}} .ewcb-card__body' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+					'{{WRAPPER}} .ewcb-card' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
 				),
 			)
 		);
@@ -682,6 +772,280 @@ class Widget_Product_Catalog extends Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'icon_button_background',
+			array(
+				'label'     => __( 'Action Icon Background', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-icon-btn' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'icon_hover_color',
+			array(
+				'label'     => __( 'Action Icon Hover Color', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-icon-btn:hover' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'icon_hover_background',
+			array(
+				'label'     => __( 'Action Icon Hover Background', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-icon-btn:hover' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Border::get_type(),
+			array(
+				'name'     => 'icon_button_border',
+				'selector' => '{{WRAPPER}} .ewcb-icon-btn',
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Box_Shadow::get_type(),
+			array(
+				'name'     => 'icon_button_shadow',
+				'selector' => '{{WRAPPER}} .ewcb-icon-btn',
+			)
+		);
+
+		$this->add_control(
+			'action_icon_gap',
+			array(
+				'label'      => __( 'Action Icon Spacing', 'ewcb' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px', 'em' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 32 ) ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__actions' => 'gap: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'action_icon_inset',
+			array(
+				'label'      => __( 'Distance from Image Edge', 'ewcb' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%' ),
+				'range'      => array(
+					'px' => array( 'min' => 0, 'max' => 48 ),
+					'%'  => array( 'min' => 0, 'max' => 20 ),
+				),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__actions' => '--ewcb-action-inset: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'icon_size',
+			array(
+				'label'      => __( 'Action Icon Size', 'ewcb' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 12, 'max' => 40 ) ),
+				'default'    => array( 'unit' => 'px', 'size' => 18 ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-icon-btn .ewcb-icon' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'icon_button_size',
+			array(
+				'label'      => __( 'Action Button Size', 'ewcb' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 24, 'max' => 64 ) ),
+				'default'    => array( 'unit' => 'px', 'size' => 36 ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-icon-btn' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'icon_button_radius',
+			array(
+				'label'      => __( 'Action Button Corner Radius', 'ewcb' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%' ),
+				'range'      => array(
+					'px' => array( 'min' => 0, 'max' => 32 ),
+					'%'  => array( 'min' => 0, 'max' => 50 ),
+				),
+				'default'   => array( 'unit' => '%', 'size' => 50 ),
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-icon-btn' => 'border-radius: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	/**
+	 * Image area styling.
+	 *
+	 * @return void
+	 */
+	private function register_style_image_controls() {
+		$this->start_controls_section(
+			'section_style_image',
+			array(
+				'label' => __( 'Product Image', 'ewcb' ),
+				'tab'   => Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_control(
+			'image_background',
+			array(
+				'label'     => __( 'Image Area Background', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#f4f4f4',
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-card__media' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'image_padding',
+			array(
+				'label'      => __( 'Image Padding', 'ewcb' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__media-link' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'image_radius',
+			array(
+				'label'      => __( 'Image Corner Radius', 'ewcb' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__media, {{WRAPPER}} .ewcb-card__media-link, {{WRAPPER}} .ewcb-card__img' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Border::get_type(),
+			array(
+				'name'     => 'image_border',
+				'selector' => '{{WRAPPER}} .ewcb-card__media',
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Box_Shadow::get_type(),
+			array(
+				'name'     => 'image_shadow',
+				'selector' => '{{WRAPPER}} .ewcb-card__media',
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	/**
+	 * Product text area styling independent from the image and card shell.
+	 *
+	 * @return void
+	 */
+	private function register_style_text_container_controls() {
+		$this->start_controls_section(
+			'section_style_text_container',
+			array(
+				'label' => __( 'Product Text Container', 'ewcb' ),
+				'tab'   => Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_control(
+			'text_container_background',
+			array(
+				'label'     => __( 'Background Color', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-card__body' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'text_container_padding',
+			array(
+				'label'      => __( 'Padding', 'ewcb' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__body' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'text_container_margin',
+			array(
+				'label'      => __( 'Margin', 'ewcb' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__body' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'text_container_gap',
+			array(
+				'label'      => __( 'Content Gap', 'ewcb' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px', 'em' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 50 ) ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__body' => 'gap: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'text_container_alignment',
+			array(
+				'label'   => __( 'Text Alignment', 'ewcb' ),
+				'type'    => Controls_Manager::CHOOSE,
+				'options' => array(
+					'left'   => array( 'title' => __( 'Left', 'ewcb' ), 'icon' => 'eicon-text-align-left' ),
+					'center' => array( 'title' => __( 'Center', 'ewcb' ), 'icon' => 'eicon-text-align-center' ),
+					'right'  => array( 'title' => __( 'Right', 'ewcb' ), 'icon' => 'eicon-text-align-right' ),
+				),
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-card__body' => 'text-align: {{VALUE}};',
+				),
+			)
+		);
+
 		$this->end_controls_section();
 	}
 
@@ -727,6 +1091,49 @@ class Widget_Product_Catalog extends Widget_Base {
 			)
 		);
 
+		$this->add_responsive_control(
+			'title_padding',
+			array(
+				'label'      => __( 'Title Padding', 'ewcb' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__title' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'title_margin',
+			array(
+				'label'      => __( 'Title Margin', 'ewcb' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__title' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'title_background',
+			array(
+				'label'     => __( 'Title Background', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-card__title' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Border::get_type(),
+			array(
+				'name'     => 'title_border',
+				'selector' => '{{WRAPPER}} .ewcb-card__title',
+			)
+		);
+
 		$this->add_control(
 			'heading_price',
 			array(
@@ -756,6 +1163,49 @@ class Widget_Product_Catalog extends Widget_Base {
 			)
 		);
 
+		$this->add_responsive_control(
+			'price_padding',
+			array(
+				'label'      => __( 'Price Padding', 'ewcb' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__price' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'price_margin',
+			array(
+				'label'      => __( 'Price Margin', 'ewcb' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__price' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'price_background',
+			array(
+				'label'     => __( 'Price Background', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-card__price' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Border::get_type(),
+			array(
+				'name'     => 'price_border',
+				'selector' => '{{WRAPPER}} .ewcb-card__price',
+			)
+		);
+
 		$this->add_control(
 			'heading_category',
 			array(
@@ -782,6 +1232,49 @@ class Widget_Product_Catalog extends Widget_Base {
 				'selectors' => array(
 					'{{WRAPPER}} .ewcb-card__cat' => 'color: {{VALUE}};',
 				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'category_padding',
+			array(
+				'label'      => __( 'Category Padding', 'ewcb' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__cat' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'category_margin',
+			array(
+				'label'      => __( 'Category Margin', 'ewcb' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__cat' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'category_background',
+			array(
+				'label'     => __( 'Category Background', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-card__cat' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Border::get_type(),
+			array(
+				'name'     => 'category_border',
+				'selector' => '{{WRAPPER}} .ewcb-card__cat',
 			)
 		);
 
@@ -872,6 +1365,60 @@ class Widget_Product_Catalog extends Widget_Base {
 				),
 				'selectors' => array(
 					'{{WRAPPER}} .ewcb-add-to-cart' => 'border-radius: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'button_padding',
+			array(
+				'label'      => __( 'Button Padding', 'ewcb' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-add-to-cart' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'button_margin',
+			array(
+				'label'      => __( 'Button Margin', 'ewcb' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-add-to-cart' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'button_icon_size',
+			array(
+				'label'      => __( 'Button Icon Size', 'ewcb' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 12, 'max' => 40 ) ),
+				'default'    => array( 'unit' => 'px', 'size' => 18 ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-add-to-cart .ewcb-icon' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'button_alignment',
+			array(
+				'label'   => __( 'Button Alignment', 'ewcb' ),
+				'type'    => Controls_Manager::CHOOSE,
+				'options' => array(
+					'flex-start' => array( 'title' => __( 'Left', 'ewcb' ), 'icon' => 'eicon-h-align-left' ),
+					'center'     => array( 'title' => __( 'Center', 'ewcb' ), 'icon' => 'eicon-h-align-center' ),
+					'flex-end'   => array( 'title' => __( 'Right', 'ewcb' ), 'icon' => 'eicon-h-align-right' ),
+				),
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-card__cart:not(.ewcb-card__cart--inline) .ewcb-add-to-cart' => 'justify-content: {{VALUE}};',
 				),
 			)
 		);
@@ -1015,14 +1562,20 @@ class Widget_Product_Catalog extends Widget_Base {
 		}
 
 		$card_settings = array(
-			'layout_preset'     => $settings['layout_preset'],
 			'products_per_page' => $settings['products_per_page'],
 			'orderby'           => $settings['orderby'],
 			'image_ratio'       => $settings['image_ratio'],
+			'show_category'     => 'yes' === $settings['show_category'],
 			'show_quick_view'   => 'yes' === $settings['show_quick_view'],
 			'show_wishlist'     => 'yes' === $settings['show_wishlist'],
 			'show_compare'      => 'yes' === $settings['show_compare'],
 			'hover_image_swap'  => 'yes' === $settings['hover_image_swap'],
+			'image_hover_zoom'  => 'yes' === $settings['image_hover_zoom'],
+			'action_visibility' => $settings['action_visibility'],
+			'action_position'   => $settings['action_position'],
+			'action_icon_layout' => $settings['action_icon_layout'],
+			'show_cart_icon'    => 'yes' === $settings['show_cart_icon'],
+			'cart_button_width' => $settings['cart_button_width'],
 		);
 
 		$ajax_filter     = \Elementor_Woo_Catalog_Builder\Ajax_Filter::instance();

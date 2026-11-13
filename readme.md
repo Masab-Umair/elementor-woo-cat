@@ -6,7 +6,7 @@ A WooCommerce extension for Elementor that brings pixel-perfect product catalogs
 
 Elementor Woo Catalog Builder adds two native Elementor widgets built specifically for WooCommerce stores that want full design control without leaving the page editor:
 
-**Product Catalog** — A responsive product grid or slider with five built-in presets (Minimal Modern, Luxury Card, Compact Grid, Editorial, Clean Bordered), per-breakpoint column control, adjustable image aspect ratios, hover image swap, and an optional AJAX sidebar filter for category, price range, attributes, and stock status.
+**Product Catalog** — A responsive product grid or slider with independent styling controls for its card, image, category, title, price, action icons, and add-to-cart button. Configure image sizing and positioning, hide categories, choose when and where action icons appear, and style text spacing, backgrounds, borders, and shadows without being locked to a preset.
 
 **Single Product Showcase** — A clean single-product layout with a configurable multi-image gallery (vertical thumbnails, horizontal thumbnails, or swipe dots), layout alignment options, and an optional sticky add-to-cart bar.
 
@@ -18,16 +18,15 @@ Most WooCommerce + Elementor integrations fall into one of two camps: rigid them
 
 ## Features
 
-- Five distinct catalog presets selectable per widget instance
 - Independently configurable column counts at desktop, tablet, and mobile breakpoints
 - Grid-to-slider toggle with autoplay, loop, arrows, and dot navigation
 - AJAX left-sidebar filtering by category, price range, product attributes, and stock status, backed by transient-cached WooCommerce queries
-- Adjustable image aspect ratios with contain (full image) and cover fit options
+- Higher-resolution product images, adjustable image aspect ratios, contain/cover/scale-down/fill fit, and image position/padding controls
 - Hover image swap using a product's secondary gallery image
-- Quick view, wishlist, and compare icons on each product card; wishlist and compare selections are stored in the visitor's browser and emit custom events for integrations
-- Lightweight inline SVG icons without external icon-font requests
+- Optional quick view, wishlist, and compare icons on each product card, with always-visible or hover-only display and configurable position; wishlist and compare selections are stored in the visitor's browser and emit custom events for integrations
+- Lightweight inline SVG icons without external icon-font requests, plus independent card/image/text/button styling controls
 - Single product showcase with three gallery styles and a sticky add-to-cart bar
-- Full Elementor Style tab coverage: typography, color, border, shadow, and spacing controls for every element
+- Elementor Style tab controls for the image, text container, title, category, price, action icons, and add-to-cart button, including typography, color, border, shadow, padding, and margins
 - Conditional asset loading — styles and scripts only load on pages where a widget is actually present
 
 ## Tech Stack
