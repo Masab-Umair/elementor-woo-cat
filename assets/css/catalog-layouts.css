@@ -328,7 +328,7 @@
 .ewcb-card__cart--inline {
 	align-self: flex-start;
 }
-.ewcb-layout .ewcb-card .ewcb-card__cart .ewcb-add-to-cart {
+.ewcb-layout .ewcb-add-to-cart {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -345,7 +345,7 @@
 	transition: background-color 0.2s ease, color 0.2s ease;
 	width: 100%;
 }
-.ewcb-layout .ewcb-card .ewcb-card__cart--inline .ewcb-add-to-cart {
+.ewcb-layout .ewcb-card__cart--inline .ewcb-add-to-cart {
 	width: auto;
 }
 .ewcb-add-to-cart__text {
