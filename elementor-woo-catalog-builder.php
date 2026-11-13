@@ -3,7 +3,7 @@
  * Plugin Name:       Elementor Woo Catalog Builder
  * Plugin URI:         https://example.com/elementor-woo-catalog-builder
  * Description:        Pixel-perfect WooCommerce product catalogs, archives, single product layouts, AJAX side-filters and interactive grids/sliders — fully controllable inside the Elementor Editor.
- * Version:             1.4.1
+ * Version:             1.5
  * Requires at least:   6.0
  * Requires PHP:        7.4
  * Author:              Masab
