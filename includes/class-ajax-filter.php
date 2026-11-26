@@ -143,6 +143,16 @@ final class Ajax_Filter {
 
 		$product_id = isset( $_POST['product_id'] ) ? absint( $_POST['product_id'] ) : 0;
 		$product    = $product_id ? wc_get_product( $product_id ) : null;
+		$modal_settings = array();
+		if ( isset( $_POST['modal_settings'] ) ) {
+			$decoded = json_decode( wp_unslash( $_POST['modal_settings'] ), true );
+			if ( is_array( $decoded ) ) {
+				$modal_settings = $decoded;
+			}
+		}
+		$show_qv = static function ( $key ) use ( $modal_settings ) {
+			return ! isset( $modal_settings[ $key ] ) || ! empty( $modal_settings[ $key ] );
+		};
 
 		if ( ! $product || ! $product->is_visible() ) {
 			wp_send_json_error( array( 'message' => __( 'Product not found.', 'ewcb' ) ) );
@@ -150,14 +160,31 @@ final class Ajax_Filter {
 
 		ob_start();
 		?>
-		<div class="ewcb-quickview">
-			<div class="ewcb-quickview__media">
-				<?php echo wp_kses_post( $product->get_image( 'woocommerce_single' ) ); ?>
-			</div>
+		<div class="ewcb-quickview<?php echo $show_qv( 'quickview_show_image' ) ? '' : ' ewcb-quickview--no-image'; ?>">
+			<?php if ( $show_qv( 'quickview_show_image' ) ) : ?>
+				<div class="ewcb-quickview__media">
+					<?php echo wp_kses_post( $product->get_image( 'woocommerce_single' ) ); ?>
+				</div>
+			<?php endif; ?>
 			<div class="ewcb-quickview__info">
-				<h2 class="ewcb-single__title"><?php echo esc_html( $product->get_name() ); ?></h2>
-				<div class="ewcb-single__price"><?php echo wp_kses_post( $product->get_price_html() ); ?></div>
-				<div class="ewcb-single__description"><?php echo wp_kses_post( wpautop( $product->get_short_description() ) ); ?></div>
+				<?php if ( $show_qv( 'quickview_show_category' ) ) : ?>
+					<div class="ewcb-quickview__category"><?php echo wp_kses_post( wc_get_product_category_list( $product_id, ', ' ) ); ?></div>
+				<?php endif; ?>
+				<?php if ( $show_qv( 'quickview_show_title' ) ) : ?>
+					<h2 class="ewcb-single__title"><?php echo esc_html( $product->get_name() ); ?></h2>
+				<?php endif; ?>
+				<?php if ( $show_qv( 'quickview_show_price' ) ) : ?>
+					<div class="ewcb-single__price"><?php echo wp_kses_post( $product->get_price_html() ); ?></div>
+				<?php endif; ?>
+				<?php if ( $show_qv( 'quickview_show_stock' ) ) : ?>
+					<div class="ewcb-quickview__stock"><?php echo esc_html( $product->is_in_stock() ? __( 'In stock', 'ewcb' ) : __( 'Out of stock', 'ewcb' ) ); ?></div>
+				<?php endif; ?>
+				<?php if ( $show_qv( 'quickview_show_sku' ) && $product->get_sku() ) : ?>
+					<div class="ewcb-quickview__sku"><?php echo esc_html( sprintf( __( 'SKU: %s', 'ewcb' ), $product->get_sku() ) ); ?></div>
+				<?php endif; ?>
+				<?php if ( $show_qv( 'quickview_show_description' ) && $product->get_short_description() ) : ?>
+					<div class="ewcb-single__description"><?php echo wp_kses_post( wpautop( $product->get_short_description() ) ); ?></div>
+				<?php endif; ?>
 				<?php
 				if ( $product->is_purchasable() && $product->is_in_stock() ) {
 					$previous_product = isset( $GLOBALS['product'] ) ? $GLOBALS['product'] : null;
@@ -656,6 +683,14 @@ final class Ajax_Filter {
 			return array_values( array_unique( array_filter( array_map( 'absint', $values ) ) ) );
 		};
 		$order = isset( $raw['order'] ) && is_string( $raw['order'] ) ? strtoupper( sanitize_text_field( $raw['order'] ) ) : '';
+		$safe_color = static function ( $key, $fallback ) use ( $raw ) {
+			$value = isset( $raw[ $key ] ) ? trim( (string) $raw[ $key ] ) : $fallback;
+			return preg_match( '/^(#[0-9a-fA-F]{3,8}|rgba?\([0-9.,%\s]+\))$/', $value ) ? $value : $fallback;
+		};
+		$safe_number = static function ( $key, $fallback, $min, $max ) use ( $raw ) {
+			$value = isset( $raw[ $key ] ) ? absint( $raw[ $key ] ) : $fallback;
+			return min( $max, max( $min, $value ) );
+		};
 
 		return array(
 			'products_per_page'  => min( 48, max( 1, $products_per_page ) ),
@@ -675,38 +710,3 @@ final class Ajax_Filter {
 			'badge_position'     => isset( $raw['badge_position'] ) && in_array( $raw['badge_position'], array( 'top-left', 'top-right', 'bottom-left', 'bottom-right' ), true ) ? $raw['badge_position'] : 'top-left',
 			'show_product_tag_badge' => ! empty( $raw['show_product_tag_badge'] ),
 			'custom_badge_text'  => isset( $raw['custom_badge_text'] ) ? sanitize_text_field( $raw['custom_badge_text'] ) : '',
-			'card_button_label'  => isset( $raw['card_button_label'] ) ? sanitize_text_field( $raw['card_button_label'] ) : '',
-			'archive_context'    => isset( $raw['archive_context'] ) ? $this->decode_archive_context( $raw['archive_context'] ) : array(),
-			'show_category'      => ! isset( $raw['show_category'] ) || ! empty( $raw['show_category'] ),
-			'show_quick_view'    => ! empty( $raw['show_quick_view'] ),
-			'show_wishlist'      => ! empty( $raw['show_wishlist'] ),
-			'show_compare'       => ! empty( $raw['show_compare'] ),
-			'hover_image_swap'   => ! empty( $raw['hover_image_swap'] ),
-			'image_hover_zoom'  => ! isset( $raw['image_hover_zoom'] ) || ! empty( $raw['image_hover_zoom'] ),
-			'action_visibility'  => isset( $raw['action_visibility'] ) && 'hover' === $raw['action_visibility'] ? 'hover' : 'always',
-			'action_position'    => isset( $raw['action_position'] ) && in_array( $raw['action_position'], array( 'top-right', 'top-left', 'bottom-right', 'bottom-left' ), true ) ? $raw['action_position'] : 'top-right',
-			'action_icon_layout' => isset( $raw['action_icon_layout'] ) && 'horizontal' === $raw['action_icon_layout'] ? 'horizontal' : 'vertical',
-			'show_cart_icon'     => ! empty( $raw['show_cart_icon'] ),
-			'cart_button_width'  => isset( $raw['cart_button_width'] ) && 'inline' === $raw['cart_button_width'] ? 'inline' : 'full',
-			'cart_vertical_alignment' => isset( $raw['cart_vertical_alignment'] ) && 'flow' === $raw['cart_vertical_alignment'] ? 'flow' : 'bottom',
-			'button_alignment'   => isset( $raw['button_alignment'] ) && in_array( $raw['button_alignment'], array( 'left', 'center', 'right' ), true ) ? $raw['button_alignment'] : 'center',
-		);
-	}
-
-	/**
-	 * Flushes all cached AJAX filter responses. Hooked to product save/
-	 * stock-change events so filter results never go stale beyond a
-	 * single edit.
-	 *
-	 * @return void
-	 */
-	public static function flush_cache() {
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$wpdb->query(
-			"DELETE FROM {$wpdb->options}
-			 WHERE option_name LIKE '\_transient\_ewcb\_%'
-			 OR option_name LIKE '\_transient\_timeout\_ewcb\_%'"
-		);
-	}
-}

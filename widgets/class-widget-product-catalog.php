@@ -95,6 +95,7 @@ class Widget_Product_Catalog extends Widget_Base {
 		$this->register_style_text_container_controls();
 		$this->register_style_typography_controls();
 		$this->register_style_card_detail_controls();
+		$this->register_style_modal_controls();
 		$this->register_style_filter_controls();
 	}
 
@@ -850,6 +851,200 @@ class Widget_Product_Catalog extends Widget_Base {
 				'description' => __( 'Bottom alignment keeps add-to-cart buttons level when product titles have different lengths.', 'ewcb' ),
 			)
 		);
+
+
+		$this->add_control(
+			'card_image_placement',
+			array(
+				'label' => __( 'Image Placement', 'ewcb' ),
+				'type' => Controls_Manager::SELECT,
+				'default' => 'top',
+				'options' => array(
+					'top' => __( 'Top', 'ewcb' ),
+					'bottom' => __( 'Bottom', 'ewcb' ),
+					'left' => __( 'Left (Horizontal Card)', 'ewcb' ),
+					'right' => __( 'Right (Horizontal Card)', 'ewcb' ),
+				),
+				'description' => __( 'Horizontal image placement automatically stacks above the content on small screens unless a mobile placement is selected.', 'ewcb' ),
+			)
+		);
+
+		$this->add_control(
+			'card_image_placement_mobile',
+			array(
+				'label' => __( 'Image Placement on Mobile', 'ewcb' ),
+				'type' => Controls_Manager::SELECT,
+				'default' => 'top',
+				'options' => array(
+					'top' => __( 'Top', 'ewcb' ),
+					'bottom' => __( 'Bottom', 'ewcb' ),
+					'left' => __( 'Left', 'ewcb' ),
+					'right' => __( 'Right', 'ewcb' ),
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'card_category_order',
+			array(
+				'label' => __( 'Category Order', 'ewcb' ),
+				'type' => Controls_Manager::SELECT,
+				'default' => '1',
+				'options' => array( '1' => '1 — First', '2' => '2', '3' => '3', '4' => '4', '5' => '5 — Last' ),
+				'selectors' => array( '{{WRAPPER}} .ewcb-card__cat' => 'order: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'card_title_order',
+			array(
+				'label' => __( 'Title Order', 'ewcb' ),
+				'type' => Controls_Manager::SELECT,
+				'default' => '2',
+				'options' => array( '1' => '1 — First', '2' => '2', '3' => '3', '4' => '4', '5' => '5 — Last' ),
+				'selectors' => array( '{{WRAPPER}} .ewcb-card__title' => 'order: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'card_description_order',
+			array(
+				'label' => __( 'Description Order', 'ewcb' ),
+				'type' => Controls_Manager::SELECT,
+				'default' => '3',
+				'options' => array( '1' => '1 — First', '2' => '2', '3' => '3', '4' => '4', '5' => '5 — Last' ),
+				'selectors' => array( '{{WRAPPER}} .ewcb-card__description' => 'order: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'card_footer_order',
+			array(
+				'label' => __( 'Price / Button Group Order', 'ewcb' ),
+				'type' => Controls_Manager::SELECT,
+				'default' => '4',
+				'options' => array( '1' => '1 — First', '2' => '2', '3' => '3', '4' => '4', '5' => '5 — Last' ),
+				'selectors' => array( '{{WRAPPER}} .ewcb-card__footer' => 'order: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'card_footer_layout',
+			array(
+				'label' => __( 'Price / Button Arrangement', 'ewcb' ),
+				'type' => Controls_Manager::SELECT,
+				'default' => 'inline',
+				'options' => array(
+					'inline' => __( 'Side by Side', 'ewcb' ),
+					'stacked' => __( 'Stacked Vertically', 'ewcb' ),
+				),
+			)
+		);
+
+		$this->add_control(
+			'price_button_order',
+			array(
+				'label' => __( 'Price / Button Order', 'ewcb' ),
+				'type' => Controls_Manager::SELECT,
+				'default' => 'price-first',
+				'options' => array(
+					'price-first' => __( 'Price then Button', 'ewcb' ),
+					'button-first' => __( 'Button then Price', 'ewcb' ),
+				),
+			)
+		);
+
+		$this->add_control(
+			'card_content_alignment',
+			array(
+				'label' => __( 'Card Content Alignment', 'ewcb' ),
+				'type' => Controls_Manager::CHOOSE,
+				'default' => 'left',
+				'options' => array(
+					'left' => array( 'title' => __( 'Left', 'ewcb' ), 'icon' => 'eicon-text-align-left' ),
+					'center' => array( 'title' => __( 'Center', 'ewcb' ), 'icon' => 'eicon-text-align-center' ),
+					'right' => array( 'title' => __( 'Right', 'ewcb' ), 'icon' => 'eicon-text-align-right' ),
+				),
+				'selectors_dictionary' => array( 'left' => 'left', 'center' => 'center', 'right' => 'right' ),
+				'selectors' => array( '{{WRAPPER}} .ewcb-card__body' => 'text-align: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'card_image_width',
+			array(
+				'label' => __( 'Horizontal Image Width', 'ewcb' ),
+				'type' => Controls_Manager::SLIDER,
+				'size_units' => array( '%' ),
+				'range' => array( '%' => array( 'min' => 25, 'max' => 70 ) ),
+				'default' => array( 'unit' => '%', 'size' => 42 ),
+				'selectors' => array( '{{WRAPPER}} .ewcb-card--image-left .ewcb-card__media, {{WRAPPER}} .ewcb-card--image-right .ewcb-card__media' => 'flex-basis: {{SIZE}}{{UNIT}}; width: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_control( 'quickview_show_image', array( 'label' => __( 'Quick View: Show Image', 'ewcb' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
+		$this->add_control( 'quickview_show_title', array( 'label' => __( 'Quick View: Show Title', 'ewcb' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
+		$this->add_control( 'quickview_show_price', array( 'label' => __( 'Quick View: Show Price', 'ewcb' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
+		$this->add_control(
+			'quickview_show_category',
+			array( 'label' => __( 'Quick View: Show Category', 'ewcb' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' )
+		);
+		$this->add_control(
+			'quickview_show_sku',
+			array( 'label' => __( 'Quick View: Show SKU', 'ewcb' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes' )
+		);
+		$this->add_control(
+			'quickview_show_stock',
+			array( 'label' => __( 'Quick View: Show Stock Status', 'ewcb' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' )
+		);
+		$this->add_control(
+			'quickview_show_description',
+			array( 'label' => __( 'Quick View: Show Description', 'ewcb' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' )
+		);
+		$this->add_control(
+			'quickview_layout',
+			array(
+				'label' => __( 'Quick View Layout', 'ewcb' ),
+				'type' => Controls_Manager::SELECT,
+				'default' => 'image-left',
+				'options' => array( 'image-left' => __( 'Image Left', 'ewcb' ), 'image-right' => __( 'Image Right', 'ewcb' ), 'stacked' => __( 'Image Above Details', 'ewcb' ) ),
+			)
+		);
+
+		$this->add_control(
+			'wishlist_layout',
+			array(
+				'label' => __( 'Wishlist Layout', 'ewcb' ),
+				'type' => Controls_Manager::SELECT,
+				'default' => 'grid',
+				'options' => array( 'grid' => __( 'Product Grid', 'ewcb' ), 'list' => __( 'Product List', 'ewcb' ) ),
+			)
+		);
+		$this->add_control(
+			'wishlist_columns',
+			array( 'label' => __( 'Wishlist Columns', 'ewcb' ), 'type' => Controls_Manager::SELECT, 'default' => '3', 'options' => array( '1' => '1', '2' => '2', '3' => '3', '4' => '4' ), 'condition' => array( 'wishlist_layout' => 'grid' ) )
+		);
+		$this->add_control(
+			'compare_layout',
+			array(
+				'label' => __( 'Compare Layout', 'ewcb' ),
+				'type' => Controls_Manager::SELECT,
+				'default' => 'table',
+				'options' => array( 'table' => __( 'Comparison Table', 'ewcb' ), 'cards' => __( 'Product Cards', 'ewcb' ) ),
+			)
+		);
+		foreach ( array( 'image' => __( 'Image', 'ewcb' ), 'price' => __( 'Price', 'ewcb' ), 'category' => __( 'Category', 'ewcb' ), 'stock' => __( 'Availability', 'ewcb' ), 'sku' => __( 'SKU', 'ewcb' ), 'description' => __( 'Description', 'ewcb' ) ) as $field => $label ) {
+			$this->add_control(
+				'compare_show_' . $field,
+				array( 'label' => sprintf( __( 'Compare: Show %s', 'ewcb' ), $label ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' )
+			);
+		}
+
+		$this->add_control( 'wishlist_show_image', array( 'label' => __( 'Wishlist: Show Image', 'ewcb' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
+		$this->add_control( 'wishlist_show_price', array( 'label' => __( 'Wishlist: Show Price', 'ewcb' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
+		$this->add_control( 'wishlist_show_stock', array( 'label' => __( 'Wishlist: Show Availability', 'ewcb' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
+		$this->add_control( 'wishlist_title_text', array( 'label' => __( 'Wishlist Heading', 'ewcb' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Your Wishlist', 'ewcb' ) ) );
+		$this->add_control( 'compare_title_text', array( 'label' => __( 'Compare Heading', 'ewcb' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Compare Products', 'ewcb' ) ) );
 
 		$this->end_controls_section();
 	}
@@ -1926,6 +2121,77 @@ class Widget_Product_Catalog extends Widget_Base {
 	}
 
 	/**
+	 * Styles for the Quick View, Wishlist and Compare overlays.
+	 * Values are passed to the frontend overlay because these dialogs are
+	 * rendered at document level rather than inside the Elementor wrapper.
+	 *
+	 * @return void
+	 */
+	private function register_style_modal_controls() {
+		$this->start_controls_section(
+			'section_style_quickview',
+			array(
+				'label' => __( 'Quick View Designer', 'ewcb' ),
+				'tab' => Controls_Manager::TAB_STYLE,
+				'condition' => array( 'show_quick_view' => 'yes' ),
+			)
+		);
+		$this->add_control( 'quickview_width', array( 'label' => __( 'Popup Width', 'ewcb' ), 'type' => Controls_Manager::SLIDER, 'size_units' => array( 'px' ), 'range' => array( 'px' => array( 'min' => 480, 'max' => 1200 ) ), 'default' => array( 'unit' => 'px', 'size' => 860 ) ) );
+		$this->add_control( 'quickview_background', array( 'label' => __( 'Popup Background', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => '#ffffff' ) );
+		$this->add_control( 'quickview_overlay_color', array( 'label' => __( 'Overlay Color', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => 'rgba(13,17,26,0.68)' ) );
+		$this->add_control( 'quickview_radius', array( 'label' => __( 'Popup Corner Radius', 'ewcb' ), 'type' => Controls_Manager::SLIDER, 'size_units' => array( 'px' ), 'range' => array( 'px' => array( 'min' => 0, 'max' => 40 ) ), 'default' => array( 'unit' => 'px', 'size' => 16 ) ) );
+		$this->add_control( 'quickview_padding', array( 'label' => __( 'Popup Padding', 'ewcb' ), 'type' => Controls_Manager::SLIDER, 'size_units' => array( 'px' ), 'range' => array( 'px' => array( 'min' => 10, 'max' => 60 ) ), 'default' => array( 'unit' => 'px', 'size' => 32 ) ) );
+		$this->add_control( 'quickview_title_color', array( 'label' => __( 'Title Color', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => '#111827' ) );
+		$this->add_control( 'quickview_title_size', array( 'label' => __( 'Title Font Size', 'ewcb' ), 'type' => Controls_Manager::SLIDER, 'size_units' => array( 'px' ), 'range' => array( 'px' => array( 'min' => 16, 'max' => 40 ) ), 'default' => array( 'unit' => 'px', 'size' => 26 ) ) );
+		$this->add_control( 'quickview_price_color', array( 'label' => __( 'Price Color', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => '#111827' ) );
+		$this->add_control( 'quickview_price_size', array( 'label' => __( 'Price Font Size', 'ewcb' ), 'type' => Controls_Manager::SLIDER, 'size_units' => array( 'px' ), 'range' => array( 'px' => array( 'min' => 14, 'max' => 32 ) ), 'default' => array( 'unit' => 'px', 'size' => 20 ) ) );
+		$this->add_control( 'quickview_button_background', array( 'label' => __( 'Add to Cart Background', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => '#ff1e2b' ) );
+		$this->add_control( 'quickview_button_color', array( 'label' => __( 'Add to Cart Text Color', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => '#ffffff' ) );
+		$this->add_control( 'quickview_button_size', array( 'label' => __( 'Button Font Size', 'ewcb' ), 'type' => Controls_Manager::SLIDER, 'size_units' => array( 'px' ), 'range' => array( 'px' => array( 'min' => 11, 'max' => 22 ) ), 'default' => array( 'unit' => 'px', 'size' => 14 ) ) );
+		$this->add_control( 'quickview_button_radius', array( 'label' => __( 'Button Corner Radius', 'ewcb' ), 'type' => Controls_Manager::SLIDER, 'size_units' => array( 'px' ), 'range' => array( 'px' => array( 'min' => 0, 'max' => 50 ) ), 'default' => array( 'unit' => 'px', 'size' => 24 ) ) );
+		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'section_style_wishlist',
+			array(
+				'label' => __( 'Wishlist Designer', 'ewcb' ),
+				'tab' => Controls_Manager::TAB_STYLE,
+				'condition' => array( 'show_wishlist' => 'yes' ),
+			)
+		);
+		$this->add_control( 'wishlist_width', array( 'label' => __( 'Popup Width', 'ewcb' ), 'type' => Controls_Manager::SLIDER, 'size_units' => array( 'px' ), 'range' => array( 'px' => array( 'min' => 480, 'max' => 1200 ) ), 'default' => array( 'unit' => 'px', 'size' => 920 ) ) );
+		$this->add_control( 'wishlist_background', array( 'label' => __( 'Popup Background', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => '#ffffff' ) );
+		$this->add_control( 'wishlist_overlay_color', array( 'label' => __( 'Overlay Color', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => 'rgba(13,17,26,0.68)' ) );
+		$this->add_control( 'wishlist_card_background', array( 'label' => __( 'Product Card Background', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => '#ffffff' ) );
+		$this->add_control( 'wishlist_border_color', array( 'label' => __( 'Border Color', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => '#e4e8f0' ) );
+		$this->add_control( 'wishlist_radius', array( 'label' => __( 'Product Card Radius', 'ewcb' ), 'type' => Controls_Manager::SLIDER, 'size_units' => array( 'px' ), 'range' => array( 'px' => array( 'min' => 0, 'max' => 30 ) ), 'default' => array( 'unit' => 'px', 'size' => 12 ) ) );
+		$this->add_control( 'wishlist_title_color', array( 'label' => __( 'Product Title Color', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => '#111827' ) );
+		$this->add_control( 'wishlist_title_size', array( 'label' => __( 'Product Title Font Size', 'ewcb' ), 'type' => Controls_Manager::SLIDER, 'size_units' => array( 'px' ), 'range' => array( 'px' => array( 'min' => 12, 'max' => 24 ) ), 'default' => array( 'unit' => 'px', 'size' => 15 ) ) );
+		$this->add_control( 'wishlist_price_color', array( 'label' => __( 'Price Color', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => '#111827' ) );
+		$this->add_control( 'wishlist_price_size', array( 'label' => __( 'Price Font Size', 'ewcb' ), 'type' => Controls_Manager::SLIDER, 'size_units' => array( 'px' ), 'range' => array( 'px' => array( 'min' => 12, 'max' => 24 ) ), 'default' => array( 'unit' => 'px', 'size' => 15 ) ) );
+		$this->add_control( 'wishlist_remove_color', array( 'label' => __( 'Remove Link Color', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => '#b42318' ) );
+		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'section_style_compare',
+			array(
+				'label' => __( 'Compare Designer', 'ewcb' ),
+				'tab' => Controls_Manager::TAB_STYLE,
+				'condition' => array( 'show_compare' => 'yes' ),
+			)
+		);
+		$this->add_control( 'compare_width', array( 'label' => __( 'Popup Width', 'ewcb' ), 'type' => Controls_Manager::SLIDER, 'size_units' => array( 'px' ), 'range' => array( 'px' => array( 'min' => 480, 'max' => 1400 ) ), 'default' => array( 'unit' => 'px', 'size' => 1100 ) ) );
+		$this->add_control( 'compare_background', array( 'label' => __( 'Popup Background', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => '#ffffff' ) );
+		$this->add_control( 'compare_overlay_color', array( 'label' => __( 'Overlay Color', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => 'rgba(13,17,26,0.68)' ) );
+		$this->add_control( 'compare_header_background', array( 'label' => __( 'Table Header Background', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => '#f7f8fa' ) );
+		$this->add_control( 'compare_border_color', array( 'label' => __( 'Table Border Color', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => '#e4e8f0' ) );
+		$this->add_control( 'compare_text_color', array( 'label' => __( 'Text Color', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => '#344054' ) );
+		$this->add_control( 'compare_font_size', array( 'label' => __( 'Table / Card Font Size', 'ewcb' ), 'type' => Controls_Manager::SLIDER, 'size_units' => array( 'px' ), 'range' => array( 'px' => array( 'min' => 11, 'max' => 18 ) ), 'default' => array( 'unit' => 'px', 'size' => 13 ) ) );
+		$this->add_control( 'compare_accent_color', array( 'label' => __( 'Heading / Accent Color', 'ewcb' ), 'type' => Controls_Manager::COLOR, 'default' => '#0d111a' ) );
+		$this->end_controls_section();
+	}
+
+	/**
 	 * Sidebar filter panel styling.
 	 *
 	 * @return void
@@ -2149,7 +2415,47 @@ class Widget_Product_Catalog extends Widget_Base {
 			'cart_button_width' => $settings['cart_button_width'],
 			'cart_vertical_alignment' => $settings['cart_vertical_alignment'],
 			'button_alignment' => $settings['button_alignment'],
+			'card_image_placement' => isset( $settings['card_image_placement'] ) ? $settings['card_image_placement'] : 'top',
+			'card_image_placement_mobile' => isset( $settings['card_image_placement_mobile'] ) ? $settings['card_image_placement_mobile'] : 'top',
+			'card_footer_layout' => isset( $settings['card_footer_layout'] ) ? $settings['card_footer_layout'] : 'inline',
+			'price_button_order' => isset( $settings['price_button_order'] ) ? $settings['price_button_order'] : 'price-first',
+			'quickview_layout' => isset( $settings['quickview_layout'] ) ? $settings['quickview_layout'] : 'image-left',
+			'quickview_show_image' => ! isset( $settings['quickview_show_image'] ) || 'yes' === $settings['quickview_show_image'],
+			'quickview_show_title' => ! isset( $settings['quickview_show_title'] ) || 'yes' === $settings['quickview_show_title'],
+			'quickview_show_price' => ! isset( $settings['quickview_show_price'] ) || 'yes' === $settings['quickview_show_price'],
+			'quickview_show_category' => isset( $settings['quickview_show_category'] ) ? 'yes' === $settings['quickview_show_category'] : true,
+			'quickview_show_sku' => isset( $settings['quickview_show_sku'] ) && 'yes' === $settings['quickview_show_sku'],
+			'quickview_show_stock' => ! isset( $settings['quickview_show_stock'] ) || 'yes' === $settings['quickview_show_stock'],
+			'quickview_show_description' => ! isset( $settings['quickview_show_description'] ) || 'yes' === $settings['quickview_show_description'],
+			'wishlist_layout' => isset( $settings['wishlist_layout'] ) ? $settings['wishlist_layout'] : 'grid',
+			'wishlist_columns' => isset( $settings['wishlist_columns'] ) ? absint( $settings['wishlist_columns'] ) : 3,
+			'wishlist_show_image' => ! isset( $settings['wishlist_show_image'] ) || 'yes' === $settings['wishlist_show_image'],
+			'wishlist_show_price' => ! isset( $settings['wishlist_show_price'] ) || 'yes' === $settings['wishlist_show_price'],
+			'wishlist_show_stock' => ! isset( $settings['wishlist_show_stock'] ) || 'yes' === $settings['wishlist_show_stock'],
+			'wishlist_title_text' => isset( $settings['wishlist_title_text'] ) ? sanitize_text_field( $settings['wishlist_title_text'] ) : __( 'Your Wishlist', 'ewcb' ),
+			'compare_layout' => isset( $settings['compare_layout'] ) ? $settings['compare_layout'] : 'table',
+			'compare_title_text' => isset( $settings['compare_title_text'] ) ? sanitize_text_field( $settings['compare_title_text'] ) : __( 'Compare Products', 'ewcb' ),
 		);
+		$slider_size = static function ( $key, $fallback ) use ( $settings ) {
+			return isset( $settings[ $key ]['size'] ) ? absint( $settings[ $key ]['size'] ) : $fallback;
+		};
+		$css_color = static function ( $key, $fallback ) use ( $settings ) {
+			$value = isset( $settings[ $key ] ) ? trim( (string) $settings[ $key ] ) : $fallback;
+			return preg_match( '/^(#[0-9a-fA-F]{3,8}|rgba?\([0-9.,%\s]+\))$/', $value ) ? $value : $fallback;
+		};
+		foreach ( array( 'quickview_width' => 860, 'quickview_radius' => 16, 'quickview_padding' => 32, 'quickview_button_radius' => 24, 'quickview_title_size' => 26, 'quickview_price_size' => 20, 'quickview_button_size' => 14, 'wishlist_width' => 920, 'wishlist_radius' => 12, 'wishlist_title_size' => 15, 'wishlist_price_size' => 15, 'compare_width' => 1100, 'compare_font_size' => 13 ) as $key => $fallback ) {
+			$card_settings[ $key ] = $slider_size( $key, $fallback );
+		}
+		foreach ( array(
+			'quickview_background' => '#ffffff', 'quickview_overlay_color' => 'rgba(13,17,26,0.68)', 'quickview_title_color' => '#111827', 'quickview_price_color' => '#111827', 'quickview_button_background' => '#ff1e2b', 'quickview_button_color' => '#ffffff',
+			'wishlist_background' => '#ffffff', 'wishlist_overlay_color' => 'rgba(13,17,26,0.68)', 'wishlist_card_background' => '#ffffff', 'wishlist_border_color' => '#e4e8f0', 'wishlist_title_color' => '#111827', 'wishlist_price_color' => '#111827', 'wishlist_remove_color' => '#b42318',
+			'compare_background' => '#ffffff', 'compare_overlay_color' => 'rgba(13,17,26,0.68)', 'compare_header_background' => '#f7f8fa', 'compare_border_color' => '#e4e8f0', 'compare_text_color' => '#344054', 'compare_accent_color' => '#0d111a',
+		) as $key => $fallback ) {
+			$card_settings[ $key ] = $css_color( $key, $fallback );
+		}
+		foreach ( array( 'compare_show_image', 'compare_show_price', 'compare_show_category', 'compare_show_stock', 'compare_show_sku', 'compare_show_description' ) as $key ) {
+			$card_settings[ $key ] = ! isset( $settings[ $key ] ) || 'yes' === $settings[ $key ];
+		}
 		if ( $this->is_archive_catalog_widget() ) {
 			$card_settings['query_source'] = 'archive';
 			$card_settings['query_mode']   = 'all';
