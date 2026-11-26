@@ -165,6 +165,15 @@ final class Plugin {
 	public function enqueue_catalog_assets() {
 		wp_enqueue_style( 'ewcb-catalog-layouts' );
 		wp_enqueue_script( 'ewcb-catalog-frontend' );
+
+		// Use WooCommerce's native cart handlers for product-card buttons and
+		// dynamically inserted variable-product forms in Quick View.
+		if ( wp_script_is( 'wc-add-to-cart', 'registered' ) ) {
+			wp_enqueue_script( 'wc-add-to-cart' );
+		}
+		if ( wp_script_is( 'wc-add-to-cart-variation', 'registered' ) ) {
+			wp_enqueue_script( 'wc-add-to-cart-variation' );
+		}
 	}
 
 	/**

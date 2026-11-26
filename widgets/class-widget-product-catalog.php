@@ -94,6 +94,7 @@ class Widget_Product_Catalog extends Widget_Base {
 		$this->register_style_image_controls();
 		$this->register_style_text_container_controls();
 		$this->register_style_typography_controls();
+		$this->register_style_card_detail_controls();
 		$this->register_style_filter_controls();
 	}
 
@@ -534,8 +535,9 @@ class Widget_Product_Catalog extends Widget_Base {
 			array(
 				'label'   => __( 'Image Aspect Ratio', 'ewcb' ),
 				'type'    => Controls_Manager::SELECT,
-				'default' => '1/1',
+				'default' => '16/10',
 				'options' => array(
+					'16/10' => __( 'Landscape (16:10)', 'ewcb' ),
 					'1/1'  => __( 'Square (1:1)', 'ewcb' ),
 					'4/5'  => __( 'Portrait (4:5)', 'ewcb' ),
 					'3/4'  => __( 'Portrait (3:4)', 'ewcb' ),
@@ -551,7 +553,7 @@ class Widget_Product_Catalog extends Widget_Base {
 			array(
 				'label'     => __( 'Image Fit', 'ewcb' ),
 				'type'      => Controls_Manager::SELECT,
-				'default'   => 'contain',
+				'default'   => 'cover',
 				'options'   => array(
 					'cover'   => __( 'Cover', 'ewcb' ),
 					'contain' => __( 'Contain', 'ewcb' ),
@@ -583,6 +585,130 @@ class Widget_Product_Catalog extends Widget_Base {
 				'selectors' => array(
 					'{{WRAPPER}} .ewcb-card__media .ewcb-card__img' => 'object-position: {{VALUE}};',
 				),
+			)
+		);
+
+		$this->add_control(
+			'show_description',
+			array(
+				'label'        => __( 'Show Short Description', 'ewcb' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'default'      => 'yes',
+				'return_value' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'description_words',
+			array(
+				'label'     => __( 'Description Word Limit', 'ewcb' ),
+				'type'      => Controls_Manager::NUMBER,
+				'min'       => 5,
+				'max'       => 60,
+				'default'   => 20,
+				'condition' => array( 'show_description' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'show_price',
+			array(
+				'label'        => __( 'Show Price', 'ewcb' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'default'      => 'yes',
+				'return_value' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'show_sale_badge',
+			array(
+				'label'        => __( 'Show Sale Badge', 'ewcb' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'default'      => 'yes',
+				'return_value' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'sale_badge_label',
+			array(
+				'label'       => __( 'Sale Badge Text', 'ewcb' ),
+				'type'        => Controls_Manager::TEXT,
+				'default'     => __( 'Sale', 'ewcb' ),
+				'placeholder' => __( 'Sale, Offer, Special Price', 'ewcb' ),
+				'condition'   => array( 'show_sale_badge' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'badge_position',
+			array(
+				'label'   => __( 'Badge Position', 'ewcb' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'top-left',
+				'options' => array(
+					'top-left'     => __( 'Top Left', 'ewcb' ),
+					'top-right'    => __( 'Top Right', 'ewcb' ),
+					'bottom-left'  => __( 'Bottom Left', 'ewcb' ),
+					'bottom-right' => __( 'Bottom Right', 'ewcb' ),
+				),
+			)
+		);
+
+		$this->add_control(
+			'badge_alignment',
+			array(
+				'label'   => __( 'Badge Alignment', 'ewcb' ),
+				'type'    => Controls_Manager::CHOOSE,
+				'default' => 'left',
+				'options' => array(
+					'left'   => array( 'title' => __( 'Left', 'ewcb' ), 'icon' => 'eicon-text-align-left' ),
+					'center' => array( 'title' => __( 'Center', 'ewcb' ), 'icon' => 'eicon-text-align-center' ),
+					'right'  => array( 'title' => __( 'Right', 'ewcb' ), 'icon' => 'eicon-text-align-right' ),
+				),
+				'selectors_dictionary' => array(
+					'left'   => 'flex-start',
+					'center' => 'center',
+					'right'  => 'flex-end',
+				),
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-card__badges' => 'align-items: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'show_product_tag_badge',
+			array(
+				'label'        => __( 'Show First Product Tag as Badge', 'ewcb' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'default'      => '',
+				'return_value' => 'yes',
+				'description'  => __( 'Manage each product label through WooCommerce Product Tags.', 'ewcb' ),
+			)
+		);
+
+		$this->add_control(
+			'custom_badge_text',
+			array(
+				'label'       => __( 'Custom Badge Text', 'ewcb' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'e.g. Bestseller, Chef\'s Pick, New', 'ewcb' ),
+				'label_block' => true,
+				'description' => __( 'Optional badge shown on every product card in this widget. Leave empty to show only sale badges.', 'ewcb' ),
+			)
+		);
+
+		$this->add_control(
+			'card_button_label',
+			array(
+				'label'       => __( 'Button Label Override', 'ewcb' ),
+				'type'        => Controls_Manager::TEXT,
+				'default'     => __( 'Add', 'ewcb' ),
+				'placeholder' => __( 'Leave empty for WooCommerce default', 'ewcb' ),
+				'label_block' => true,
+				'description' => __( 'For example, use “Add” for a restaurant menu or “Choose options” for configurable products.', 'ewcb' ),
 			)
 		);
 
@@ -703,7 +829,7 @@ class Widget_Product_Catalog extends Widget_Base {
 			array(
 				'label'   => __( 'Add to Cart Width', 'ewcb' ),
 				'type'    => Controls_Manager::SELECT,
-				'default' => 'full',
+				'default' => 'inline',
 				'options' => array(
 					'full'   => __( 'Full Width', 'ewcb' ),
 					'inline' => __( 'Inline', 'ewcb' ),
@@ -850,6 +976,18 @@ class Widget_Product_Catalog extends Widget_Base {
 				'name'     => 'card_shadow_hover',
 				'label'    => __( 'Box Shadow (Hover)', 'ewcb' ),
 				'selector' => '{{WRAPPER}} .ewcb-card:hover',
+			)
+		);
+
+		$this->add_control(
+			'card_border_hover_color',
+			array(
+				'label'     => __( 'Border Color (Hover)', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#d6dce7',
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-card:hover' => 'border-color: {{VALUE}};',
+				),
 			)
 		);
 
@@ -1421,7 +1559,7 @@ class Widget_Product_Catalog extends Widget_Base {
 			array(
 				'label'     => __( 'Button Background', 'ewcb' ),
 				'type'      => Controls_Manager::COLOR,
-				'default'   => '#1a1a1a',
+				'default'   => '#ff1e2b',
 				'selectors' => array(
 					'{{WRAPPER}} .ewcb-add-to-cart' => 'background-color: {{VALUE}};',
 				),
@@ -1445,7 +1583,7 @@ class Widget_Product_Catalog extends Widget_Base {
 			array(
 				'label'     => __( 'Button Background (Hover)', 'ewcb' ),
 				'type'      => Controls_Manager::COLOR,
-				'default'   => '#ffffff',
+				'default'   => '#e00f1b',
 				'selectors' => array(
 					'{{WRAPPER}} .ewcb-add-to-cart:hover' => 'background-color: {{VALUE}};',
 				),
@@ -1457,7 +1595,7 @@ class Widget_Product_Catalog extends Widget_Base {
 			array(
 				'label'     => __( 'Button Text Color (Hover)', 'ewcb' ),
 				'type'      => Controls_Manager::COLOR,
-				'default'   => '#1a1a1a',
+				'default'   => '#ffffff',
 				'selectors' => array(
 					'{{WRAPPER}} .ewcb-add-to-cart:hover' => 'color: {{VALUE}};',
 				),
@@ -1547,6 +1685,239 @@ class Widget_Product_Catalog extends Widget_Base {
 				'selectors' => array(
 					'{{WRAPPER}} .ewcb-card__cart' => 'justify-content: {{VALUE}};',
 					'{{WRAPPER}} .ewcb-add-to-cart' => 'justify-content: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	/**
+	 * Additional description and badge styling for the reusable product card.
+	 *
+	 * @return void
+	 */
+	private function register_style_card_detail_controls() {
+		$this->start_controls_section(
+			'section_style_card_details',
+			array(
+				'label' => __( 'Card Description & Badge', 'ewcb' ),
+				'tab'   => Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_control(
+			'footer_border_color',
+			array(
+				'label'     => __( 'Price / Button Divider Color', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#e4e8f0',
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-card__footer' => 'border-top-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'footer_border_width',
+			array(
+				'label'      => __( 'Divider Thickness', 'ewcb' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 5 ) ),
+				'default'    => array( 'unit' => 'px', 'size' => 1 ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__footer' => 'border-top-width: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'footer_padding_top',
+			array(
+				'label'      => __( 'Footer Top Spacing', 'ewcb' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px', 'em' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'default'    => array( 'unit' => 'px', 'size' => 10 ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__footer' => 'padding-top: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'footer_gap',
+			array(
+				'label'      => __( 'Price / Button Gap', 'ewcb' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px', 'em' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 32 ) ),
+				'default'    => array( 'unit' => 'px', 'size' => 12 ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__footer' => 'gap: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'description_typography',
+				'label'    => __( 'Description Typography', 'ewcb' ),
+				'selector' => '{{WRAPPER}} .ewcb-card__description',
+			)
+		);
+
+		$this->add_control(
+			'description_color',
+			array(
+				'label'     => __( 'Description Color', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#667085',
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-card__description' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'description_margin',
+			array(
+				'label'      => __( 'Description Margin', 'ewcb' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__description' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'description_line_height',
+			array(
+				'label'      => __( 'Description Line Height', 'ewcb' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'em', 'px' ),
+				'range'      => array(
+					'em' => array( 'min' => 1, 'max' => 2.5, 'step' => 0.1 ),
+					'px' => array( 'min' => 14, 'max' => 36 ),
+				),
+				'default'    => array( 'unit' => 'em', 'size' => 1.45 ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__description' => 'line-height: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'custom_badge_background',
+			array(
+				'label'     => __( 'Custom Badge Background', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#0062ff',
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-card__badge--custom' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'custom_badge_color',
+			array(
+				'label'     => __( 'Custom Badge Text Color', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-card__badge--custom' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'product_tag_badge_background',
+			array(
+				'label'     => __( 'Product Tag Badge Background', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#0062ff',
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-card__badge--tag' => 'background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'product_tag_badge_color',
+			array(
+				'label'     => __( 'Product Tag Badge Text Color', 'ewcb' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => array(
+					'{{WRAPPER}} .ewcb-card__badge--tag' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'badge_typography',
+				'label'    => __( 'Badge Typography', 'ewcb' ),
+				'selector' => '{{WRAPPER}} .ewcb-card__badge',
+			)
+		);
+
+		$this->add_control(
+			'badge_gap',
+			array(
+				'label'      => __( 'Spacing Between Badges', 'ewcb' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px', 'em' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 20 ) ),
+				'default'    => array( 'unit' => 'px', 'size' => 6 ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__badges' => 'gap: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'badge_padding',
+			array(
+				'label'      => __( 'Badge Padding', 'ewcb' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em' ),
+				'default'    => array( 'top' => 4, 'right' => 9, 'bottom' => 4, 'left' => 9, 'unit' => 'px' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__badge' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'badge_radius',
+			array(
+				'label'      => __( 'Badge Corner Radius', 'ewcb' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 30 ), '%' => array( 'min' => 0, 'max' => 50 ) ),
+				'default'    => array( 'unit' => 'px', 'size' => 6 ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__badge' => 'border-radius: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'badge_inset',
+			array(
+				'label'      => __( 'Badge Distance from Edge', 'ewcb' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'default'    => array( 'unit' => 'px', 'size' => 10 ),
+				'selectors'  => array(
+					'{{WRAPPER}} .ewcb-card__badges' => '--ewcb-badge-inset: {{SIZE}}{{UNIT}};',
 				),
 			)
 		);
@@ -1741,7 +2112,8 @@ class Widget_Product_Catalog extends Widget_Base {
 		$filters_enabled = 'yes' === $settings['enable_filters'];
 		$has_ajax_pagination = 'grid' === $settings['display_mode'] && 'yes' === $settings['show_pagination'];
 		$has_quick_view = 'yes' === $settings['show_quick_view'];
-		if ( $filters_enabled || $has_ajax_pagination || $has_quick_view ) {
+		$has_collections = 'yes' === $settings['show_wishlist'] || 'yes' === $settings['show_compare'];
+		if ( $filters_enabled || $has_ajax_pagination || $has_quick_view || $has_collections ) {
 			\Elementor_Woo_Catalog_Builder\Plugin::instance()->enqueue_filter_assets();
 		}
 
@@ -1755,6 +2127,15 @@ class Widget_Product_Catalog extends Widget_Base {
 			'include_products'  => isset( $settings['include_products'] ) ? $settings['include_products'] : '',
 			'exclude_products'  => isset( $settings['exclude_products'] ) ? $settings['exclude_products'] : '',
 			'image_ratio'       => $settings['image_ratio'],
+			'show_description'  => 'yes' === $settings['show_description'],
+			'description_words' => isset( $settings['description_words'] ) ? absint( $settings['description_words'] ) : 20,
+			'show_price'        => 'yes' === $settings['show_price'],
+			'show_sale_badge'   => 'yes' === $settings['show_sale_badge'],
+			'sale_badge_label'  => isset( $settings['sale_badge_label'] ) ? $settings['sale_badge_label'] : __( 'Sale', 'ewcb' ),
+			'badge_position'    => isset( $settings['badge_position'] ) ? $settings['badge_position'] : 'top-left',
+			'custom_badge_text' => isset( $settings['custom_badge_text'] ) ? $settings['custom_badge_text'] : '',
+			'show_product_tag_badge' => 'yes' === $settings['show_product_tag_badge'],
+			'card_button_label' => isset( $settings['card_button_label'] ) ? $settings['card_button_label'] : '',
 			'show_category'     => 'yes' === $settings['show_category'],
 			'show_quick_view'   => 'yes' === $settings['show_quick_view'],
 			'show_wishlist'     => 'yes' === $settings['show_wishlist'],
@@ -1778,14 +2159,23 @@ class Widget_Product_Catalog extends Widget_Base {
 		$archive_context = $this->get_archive_query_context();
 		$query_settings  = $card_settings;
 		$ajax_settings   = $card_settings;
-		$initial_page    = 1;
+		$page_param = 'ewcb_page_' . sanitize_key( $this->get_id() );
+		$has_page_override = isset( $_GET[ $page_param ] ) && ! is_array( $_GET[ $page_param ] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- public catalog page navigation.
+		$requested_page = $has_page_override ? absint( wp_unslash( $_GET[ $page_param ] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- public catalog page navigation.
+		$initial_page = max( 1, $requested_page );
 		if ( $archive_context ) {
 			global $wp_query;
 			$query_settings['archive_context'] = $archive_context;
 			$ajax_settings['archive_context']  = $ajax_filter->create_archive_context_token( $archive_context );
-			$initial_page = ! empty( $wp_query->query_vars['paged'] ) ? max( 1, absint( $wp_query->query_vars['paged'] ) ) : 1;
+			if ( ! $has_page_override && ! empty( $wp_query->query_vars['paged'] ) ) {
+				$initial_page = max( 1, absint( $wp_query->query_vars['paged'] ) );
+			}
 		}
 		$query = $ajax_filter->build_query( array(), $query_settings, $initial_page );
+		if ( $query->max_num_pages > 0 && $initial_page > $query->max_num_pages ) {
+			$initial_page = (int) $query->max_num_pages;
+			$query        = $ajax_filter->build_query( array(), $query_settings, $initial_page );
+		}
 
 		$wrapper_classes = array(
 			'ewcb-layout',
@@ -1826,8 +2216,8 @@ class Widget_Product_Catalog extends Widget_Base {
 				</div>
 
 				<?php if ( 'grid' === $settings['display_mode'] && 'yes' === $settings['show_pagination'] && $query->max_num_pages > 1 ) : ?>
-					<nav class="ewcb-pagination" data-max-pages="<?php echo esc_attr( $query->max_num_pages ); ?>" data-current-page="<?php echo esc_attr( $initial_page ); ?>" aria-label="<?php esc_attr_e( 'Product pagination', 'ewcb' ); ?>">
-						<button type="button" class="ewcb-pagination__prev" <?php disabled( $initial_page <= 1 ); ?>><?php Render_Helpers::icon( 'chevron-left' ); ?></button>
+					<nav class="ewcb-pagination" data-max-pages="<?php echo esc_attr( $query->max_num_pages ); ?>" data-current-page="<?php echo esc_attr( $initial_page ); ?>" data-page-param="<?php echo esc_attr( $page_param ); ?>" aria-label="<?php esc_attr_e( 'Product pagination', 'ewcb' ); ?>">
+						<a class="ewcb-pagination__prev<?php echo $initial_page <= 1 ? ' is-disabled' : ''; ?>" href="<?php echo esc_url( add_query_arg( $page_param, max( 1, $initial_page - 1 ) ) ); ?>" aria-label="<?php esc_attr_e( 'Previous products', 'ewcb' ); ?>" aria-disabled="<?php echo $initial_page <= 1 ? 'true' : 'false'; ?>"><?php Render_Helpers::icon( 'chevron-left' ); ?></a>
 						<span class="ewcb-pagination__status">
 							<?php
 							printf(
@@ -1838,8 +2228,18 @@ class Widget_Product_Catalog extends Widget_Base {
 							);
 							?>
 						</span>
-						<button type="button" class="ewcb-pagination__next" <?php disabled( $initial_page >= $query->max_num_pages ); ?>><?php Render_Helpers::icon( 'chevron-right' ); ?></button>
+						<a class="ewcb-pagination__next<?php echo $initial_page >= $query->max_num_pages ? ' is-disabled' : ''; ?>" href="<?php echo esc_url( $initial_page >= $query->max_num_pages ? add_query_arg( $page_param, $query->max_num_pages ) : add_query_arg( $page_param, $initial_page + 1 ) ); ?>" aria-label="<?php esc_attr_e( 'Next products', 'ewcb' ); ?>" aria-disabled="<?php echo $initial_page >= $query->max_num_pages ? 'true' : 'false'; ?>"><?php Render_Helpers::icon( 'chevron-right' ); ?></a>
 					</nav>
+				<?php endif; ?>
+				<?php if ( 'yes' === $settings['show_wishlist'] || 'yes' === $settings['show_compare'] ) : ?>
+					<div class="ewcb-collections" aria-label="<?php esc_attr_e( 'Saved products', 'ewcb' ); ?>">
+						<?php if ( 'yes' === $settings['show_wishlist'] ) : ?>
+							<button type="button" class="ewcb-collection-trigger ewcb-open-wishlist" data-type="wishlist"><?php esc_html_e( 'Wishlist', 'ewcb' ); ?> <span class="ewcb-collection-count" data-count-type="wishlist">0</span></button>
+						<?php endif; ?>
+						<?php if ( 'yes' === $settings['show_compare'] ) : ?>
+							<button type="button" class="ewcb-collection-trigger ewcb-open-compare" data-type="compare"><?php esc_html_e( 'Compare', 'ewcb' ); ?> <span class="ewcb-collection-count" data-count-type="compare">0</span></button>
+						<?php endif; ?>
+					</div>
 				<?php endif; ?>
 			</div>
 		</div>

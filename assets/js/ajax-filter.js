@@ -80,7 +80,12 @@
 	function fetchAndRender( layout, paged ) {
 		var grid = layout.querySelector( '.ewcb-grid' );
 		var panel = layout.querySelector( '.ewcb-filters' );
-		if ( ! grid || ! window.EWCB_AJAX ) {
+		if ( ! grid ) {
+			return;
+		}
+		if ( ! window.EWCB_AJAX || ! window.EWCB_AJAX.ajax_url || ! window.EWCB_AJAX.nonce ) {
+			markPaginationFallback( layout );
+			showRequestError( grid, 'AJAX pagination is unavailable. Use the page links to continue.' );
 			return;
 		}
 
@@ -88,7 +93,9 @@
 		try {
 			settings = JSON.parse( grid.getAttribute( 'data-settings' ) || '{}' );
 		} catch ( e ) {
-			settings = {};
+			markPaginationFallback( layout );
+			showRequestError( grid, 'Catalog settings could not be read. Use the page link to continue.' );
+			return;
 		}
 
 		var filters = panel ? readFilterState( panel ) : {};
@@ -110,12 +117,23 @@
 		formData.append( 'paged', paged || 1 );
 		formData.append( 'include_price_bounds', panel && panel.querySelector( '.ewcb-filters__price-slider' ) ? '1' : '0' );
 
-		fetch( window.EWCB_AJAX.ajax_url, { method: 'POST', body: formData, credentials: 'same-origin' } )
+		fetch( window.EWCB_AJAX.ajax_url, {
+			method: 'POST',
+			body: formData,
+			credentials: 'same-origin',
+			headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+		} )
 			.then( function ( res ) {
-				if ( ! res.ok ) {
-					throw new Error( 'Catalog request failed with status ' + res.status );
-				}
-				return res.json();
+				return res.text().then( function ( text ) {
+					var payload;
+					try { payload = JSON.parse( text ); } catch ( error ) {
+						throw new Error( 'The server returned an invalid response (HTTP ' + res.status + '). Check the WordPress/PHP error log.' );
+					}
+					if ( ! res.ok ) {
+						throw new Error( payload && payload.data && payload.data.message ? payload.data.message : 'Catalog request failed with status ' + res.status );
+					}
+					return payload;
+				} );
 			} )
 			.then( function ( json ) {
 				if ( Number( layout.dataset.ewcbRequestId ) !== requestId ) {
@@ -123,8 +141,9 @@
 				}
 				grid.classList.remove( 'is-loading' );
 				grid.setAttribute( 'aria-busy', 'false' );
-				if ( ! json.success ) {
-					showRequestError( grid, json.data && json.data.message );
+				if ( ! json || ! json.success || ! json.data || 'string' !== typeof json.data.html ) {
+					markPaginationFallback( layout );
+					showRequestError( grid, json && json.data && json.data.message ? json.data.message : 'The catalog could not load this page. Use the page link to continue.' );
 					return;
 				}
 
@@ -140,21 +159,42 @@
 
 				grid.scrollIntoView( { behavior: 'smooth', block: 'nearest' } );
 			} )
-			.catch( function () {
+			.catch( function ( error ) {
 				if ( Number( layout.dataset.ewcbRequestId ) !== requestId ) {
 					return;
 				}
 				grid.classList.remove( 'is-loading' );
 				grid.setAttribute( 'aria-busy', 'false' );
-				showRequestError( grid );
+				markPaginationFallback( layout );
+				showRequestError( grid, error && error.message ? error.message : '' );
 			} );
+	}
+
+	function markPaginationFallback( layout ) {
+		var nav = layout.querySelector( '.ewcb-pagination' );
+		if ( ! nav ) { return; }
+		nav.querySelectorAll( '.ewcb-pagination__prev, .ewcb-pagination__next' ).forEach( function ( link ) {
+			link.dataset.ewcbFallback = '1';
+		} );
+	}
+
+	function buildPageUrl( pageParam, page ) {
+		try {
+			var url = new URL( window.location.href );
+			// Keep an explicit page=1 override so fallback links also work on
+			// pretty-permalink WooCommerce archive pages (/page/2/).
+			url.searchParams.set( pageParam, String( Math.max( 1, page ) ) );
+			return url.toString();
+		} catch ( error ) {
+			return window.location.href;
+		}
 	}
 
 	function showRequestError( grid, message ) {
 		var error = document.createElement( 'div' );
 		error.className = 'ewcb-request-error';
 		error.setAttribute( 'role', 'alert' );
-		error.textContent = message || window.EWCB_AJAX.request_error;
+		error.textContent = message || ( window.EWCB_AJAX && window.EWCB_AJAX.request_error ? window.EWCB_AJAX.request_error : 'We could not update the products. Please try again.' );
 		grid.appendChild( error );
 	}
 
@@ -191,11 +231,20 @@
 
 		var prevBtn = nav.querySelector( '.ewcb-pagination__prev' );
 		var nextBtn = nav.querySelector( '.ewcb-pagination__next' );
+		var pageParam = nav.getAttribute( 'data-page-param' ) || '';
 		if ( prevBtn ) {
-			prevBtn.disabled = data.paged <= 1;
+			var prevDisabled = data.paged <= 1;
+			prevBtn.classList.toggle( 'is-disabled', prevDisabled );
+			prevBtn.setAttribute( 'aria-disabled', prevDisabled ? 'true' : 'false' );
+			prevBtn.href = buildPageUrl( pageParam, Math.max( 1, data.paged - 1 ) );
+			delete prevBtn.dataset.ewcbFallback;
 		}
 		if ( nextBtn ) {
-			nextBtn.disabled = data.paged >= data.max_pages;
+			var nextDisabled = data.paged >= data.max_pages;
+			nextBtn.classList.toggle( 'is-disabled', nextDisabled );
+			nextBtn.setAttribute( 'aria-disabled', nextDisabled ? 'true' : 'false' );
+			nextBtn.href = buildPageUrl( pageParam, Math.min( data.max_pages, data.paged + 1 ) );
+			delete nextBtn.dataset.ewcbFallback;
 		}
 	}
 
@@ -315,22 +364,28 @@
 			}
 		}
 
-		var nav = layout.querySelector( '.ewcb-pagination' );
-		if ( nav ) {
-			nav.addEventListener( 'click', function ( e ) {
-				var prev = e.target.closest( '.ewcb-pagination__prev' );
-				var next = e.target.closest( '.ewcb-pagination__next' );
-				if ( ! prev && ! next ) {
-					return;
-				}
-				var current = parseInt( nav.getAttribute( 'data-current-page' ), 10 ) || 1;
-				var max     = parseInt( nav.getAttribute( 'data-max-pages' ), 10 ) || 1;
-				var target  = prev ? Math.max( 1, current - 1 ) : Math.min( max, current + 1 );
-				if ( target !== current ) {
-					fetchAndRender( layout, target );
-				}
-			} );
-		}
+		layout.addEventListener( 'click', function ( e ) {
+			var target = e.target;
+			if ( ! target || ! target.closest ) { return; }
+			var prev = target.closest( '.ewcb-pagination__prev' );
+			var next = target.closest( '.ewcb-pagination__next' );
+			if ( ! prev && ! next ) { return; }
+			var link = prev || next;
+			var nav = link.closest( '.ewcb-pagination' );
+			if ( ! nav || 'true' === link.getAttribute( 'aria-disabled' ) ) {
+				e.preventDefault();
+				return;
+			}
+			// If a previous AJAX request failed, let the anchor perform a full page load.
+			if ( '1' === link.dataset.ewcbFallback || ! window.EWCB_AJAX || ! window.EWCB_AJAX.ajax_url || ! window.EWCB_AJAX.nonce ) {
+				return;
+			}
+			e.preventDefault();
+			var current = parseInt( nav.getAttribute( 'data-current-page' ), 10 ) || 1;
+			var max     = parseInt( nav.getAttribute( 'data-max-pages' ), 10 ) || 1;
+			var targetPage = prev ? Math.max( 1, current - 1 ) : Math.min( max, current + 1 );
+			if ( targetPage !== current ) { fetchAndRender( layout, targetPage ); }
+		} );
 	}
 
 	function syncPriceLabels( panel ) {

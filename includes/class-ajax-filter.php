@@ -58,6 +58,9 @@ final class Ajax_Filter {
 		add_action( 'wp_ajax_ewcb_quick_view', array( $this, 'handle_quick_view_request' ) );
 		add_action( 'wp_ajax_nopriv_ewcb_quick_view', array( $this, 'handle_quick_view_request' ) );
 
+		add_action( 'wp_ajax_ewcb_get_collections', array( $this, 'handle_collections_request' ) );
+		add_action( 'wp_ajax_nopriv_ewcb_get_collections', array( $this, 'handle_collections_request' ) );
+
 		// Invalidate cached filter results whenever stock/price data changes.
 		add_action( 'woocommerce_product_set_stock_status', array( __CLASS__, 'flush_cache' ) );
 		add_action( 'woocommerce_update_product', array( __CLASS__, 'flush_cache' ) );
@@ -71,7 +74,9 @@ final class Ajax_Filter {
 	 * @return void
 	 */
 	public function handle_filter_request() {
-		check_ajax_referer( 'ewcb_filter_nonce', 'nonce' );
+		if ( false === check_ajax_referer( 'ewcb_filter_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your catalog session expired. Refresh the page and try again.', 'ewcb' ) ), 403 );
+		}
 
 		$settings = $this->get_request_data( 'settings' );
 		if ( isset( $settings['archive_context'] ) && null === $this->decode_archive_context( $settings['archive_context'] ) ) {
@@ -88,7 +93,8 @@ final class Ajax_Filter {
 		$paged                = isset( $_POST['paged'] ) ? absint( $_POST['paged'] ) : 1;
 		$include_price_bounds = isset( $_POST['include_price_bounds'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['include_price_bounds'] ) );
 
-		$cache_key = 'ewcb_' . md5( wp_json_encode( $filters ) . wp_json_encode( $settings ) . $paged . (int) $include_price_bounds );
+		$paged = max( 1, min( 9999, absint( $paged ) ) );
+		$cache_key = 'ewcb_' . md5( EWCB_VERSION . wp_json_encode( $filters ) . wp_json_encode( $settings ) . $paged . (int) $include_price_bounds );
 		$cached    = get_transient( $cache_key );
 
 		if ( false !== $cached ) {
@@ -131,7 +137,9 @@ final class Ajax_Filter {
 	 * @return void
 	 */
 	public function handle_quick_view_request() {
-		check_ajax_referer( 'ewcb_filter_nonce', 'nonce' );
+		if ( false === check_ajax_referer( 'ewcb_filter_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your catalog session expired. Refresh the page and try again.', 'ewcb' ) ), 403 );
+		}
 
 		$product_id = isset( $_POST['product_id'] ) ? absint( $_POST['product_id'] ) : 0;
 		$product    = $product_id ? wc_get_product( $product_id ) : null;
@@ -150,13 +158,32 @@ final class Ajax_Filter {
 				<h2 class="ewcb-single__title"><?php echo esc_html( $product->get_name() ); ?></h2>
 				<div class="ewcb-single__price"><?php echo wp_kses_post( $product->get_price_html() ); ?></div>
 				<div class="ewcb-single__description"><?php echo wp_kses_post( wpautop( $product->get_short_description() ) ); ?></div>
-				<?php if ( $product->is_purchasable() && $product->is_in_stock() ) : ?>
-					<a href="<?php echo esc_url( $product->add_to_cart_url() ); ?>" class="ewcb-single__add-to-cart button" data-product_id="<?php echo esc_attr( $product->get_id() ); ?>" rel="nofollow">
-						<?php echo esc_html( $product->add_to_cart_text() ); ?>
-					</a>
-				<?php else : ?>
+				<?php
+				if ( $product->is_purchasable() && $product->is_in_stock() ) {
+					$previous_product = isset( $GLOBALS['product'] ) ? $GLOBALS['product'] : null;
+					$GLOBALS['product'] = $product;
+					if ( $product->is_type( 'variable' ) ) {
+						$available_variations = $product->get_available_variations();
+						$attributes           = $product->get_variation_attributes();
+						$selected_attributes  = $product->get_default_attributes();
+						wc_get_template(
+							'single-product/add-to-cart/variable.php',
+							compact( 'available_variations', 'attributes', 'selected_attributes' )
+						);
+					} else {
+						woocommerce_template_single_add_to_cart();
+					}
+					if ( null === $previous_product ) {
+						unset( $GLOBALS['product'] );
+					} else {
+						$GLOBALS['product'] = $previous_product;
+					}
+				} else {
+					?>
 					<div class="ewcb-single__unavailable"><?php esc_html_e( 'Currently unavailable.', 'ewcb' ); ?></div>
-				<?php endif; ?>
+					<?php
+				}
+				?>
 				<a href="<?php echo esc_url( get_permalink( $product->get_id() ) ); ?>" class="ewcb-quickview__full-link"><?php esc_html_e( 'View full details', 'ewcb' ); ?></a>
 			</div>
 		</div>
@@ -164,6 +191,54 @@ final class Ajax_Filter {
 		$html = ob_get_clean();
 
 		wp_send_json_success( array( 'html' => $html ) );
+	}
+
+	/**
+	 * Returns trusted product data for the browser-persisted wishlist and comparison list.
+	 * Product IDs are always reloaded from WooCommerce; client storage is never trusted for output.
+	 *
+	 * @return void
+	 */
+	public function handle_collections_request() {
+		if ( false === check_ajax_referer( 'ewcb_filter_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your catalog session expired. Refresh the page and try again.', 'ewcb' ) ), 403 );
+		}
+
+		$type = isset( $_POST['type'] ) ? sanitize_key( wp_unslash( $_POST['type'] ) ) : '';
+		if ( ! in_array( $type, array( 'wishlist', 'compare' ), true ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid saved-products request.', 'ewcb' ) ), 400 );
+		}
+
+		$raw_ids = isset( $_POST['product_ids'] ) ? json_decode( wp_unslash( $_POST['product_ids'] ), true ) : array();
+		if ( ! is_array( $raw_ids ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid product list.', 'ewcb' ) ), 400 );
+		}
+
+		$limit = 'compare' === $type ? 4 : 50;
+		$ids   = array_slice( array_values( array_unique( array_filter( array_map( 'absint', $raw_ids ) ) ) ), 0, $limit );
+		$items = array();
+
+		foreach ( $ids as $product_id ) {
+			$product = wc_get_product( $product_id );
+			if ( ! $product instanceof \WC_Product || ! $product->is_visible() ) {
+				continue;
+			}
+
+			$category_names = wp_get_post_terms( $product_id, 'product_cat', array( 'fields' => 'names' ) );
+			$items[] = array(
+				'id'          => $product_id,
+				'name'        => $product->get_name(),
+				'url'         => get_permalink( $product_id ),
+				'image_html'  => wp_kses_post( $product->get_image( 'woocommerce_thumbnail', array( 'loading' => 'lazy' ) ) ),
+				'price_html'  => wp_kses_post( $product->get_price_html() ),
+				'sku'         => $product->get_sku(),
+				'categories'  => is_array( $category_names ) && ! is_wp_error( $category_names ) ? implode( ', ', $category_names ) : '',
+				'availability'=> $product->is_in_stock() ? __( 'In stock', 'ewcb' ) : __( 'Out of stock', 'ewcb' ),
+				'description' => wp_trim_words( wp_strip_all_tags( $product->get_short_description() ), 18, '…' ),
+			);
+		}
+
+		wp_send_json_success( array( 'type' => $type, 'items' => $items ) );
 	}
 
 	/**
@@ -591,7 +666,16 @@ final class Ajax_Filter {
 			'query_categories'   => isset( $raw['query_categories'] ) ? $ids( $raw['query_categories'] ) : array(),
 			'include_products'   => isset( $raw['include_products'] ) ? $ids( $raw['include_products'] ) : array(),
 			'exclude_products'   => isset( $raw['exclude_products'] ) ? $ids( $raw['exclude_products'] ) : array(),
-			'image_ratio'        => isset( $raw['image_ratio'] ) ? sanitize_text_field( $raw['image_ratio'] ) : '1/1',
+			'image_ratio'        => isset( $raw['image_ratio'] ) && in_array( $raw['image_ratio'], array( '1/1', '4/5', '3/4', '16/10', '16/9', '4/3', 'auto' ), true ) ? $raw['image_ratio'] : '16/10',
+			'show_description'   => ! isset( $raw['show_description'] ) || ! empty( $raw['show_description'] ),
+			'description_words'  => isset( $raw['description_words'] ) ? min( 60, max( 5, absint( $raw['description_words'] ) ) ) : 20,
+			'show_price'         => ! isset( $raw['show_price'] ) || ! empty( $raw['show_price'] ),
+			'show_sale_badge'    => ! isset( $raw['show_sale_badge'] ) || ! empty( $raw['show_sale_badge'] ),
+			'sale_badge_label'   => isset( $raw['sale_badge_label'] ) ? sanitize_text_field( $raw['sale_badge_label'] ) : __( 'Sale', 'ewcb' ),
+			'badge_position'     => isset( $raw['badge_position'] ) && in_array( $raw['badge_position'], array( 'top-left', 'top-right', 'bottom-left', 'bottom-right' ), true ) ? $raw['badge_position'] : 'top-left',
+			'show_product_tag_badge' => ! empty( $raw['show_product_tag_badge'] ),
+			'custom_badge_text'  => isset( $raw['custom_badge_text'] ) ? sanitize_text_field( $raw['custom_badge_text'] ) : '',
+			'card_button_label'  => isset( $raw['card_button_label'] ) ? sanitize_text_field( $raw['card_button_label'] ) : '',
 			'archive_context'    => isset( $raw['archive_context'] ) ? $this->decode_archive_context( $raw['archive_context'] ) : array(),
 			'show_category'      => ! isset( $raw['show_category'] ) || ! empty( $raw['show_category'] ),
 			'show_quick_view'    => ! empty( $raw['show_quick_view'] ),
