@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Elementor Woo Catalog Builder
  * Description:        Pixel-perfect WooCommerce product catalogs, archives, single product layouts, AJAX side-filters and interactive grids/sliders — fully controllable inside the Elementor Editor.
- * Version:             1.7.0
+ * Version:             1.6.0
  * Requires at least:   6.0
  * Requires PHP:        7.4
  * Author:              Masab
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Core plugin constants.
  */
-define( 'EWCB_VERSION', '1.7.0' );
+define( 'EWCB_VERSION', '1.6.0' );
 define( 'EWCB_PLUGIN_FILE', __FILE__ );
 define( 'EWCB_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 define( 'EWCB_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );

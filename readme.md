@@ -1,6 +1,6 @@
 # Elementor Woo Catalog Builder
 
-**Current development version: 1.7.0**
+**Current development version: 1.6.0**
 
 A WooCommerce extension for Elementor that brings pixel-perfect product catalogs, archives, and single product layouts directly into the Elementor editor — no separate settings screen required.
 
@@ -33,26 +33,11 @@ Most WooCommerce + Elementor integrations fall into one of two camps: rigid them
 - Optional quick view, wishlist, and compare icons on each product card, with always-visible or hover-only display and configurable position; the built-in wishlist and compare panels render saved products (wishlist up to 50, compare up to 4) using browser-local storage and emit custom events for integrations
 - Variable products can open in Quick View with WooCommerce variation selectors and add-to-cart forms, so size/flavour/attribute choices can be made without leaving the catalog
 - Product cards support configurable description visibility/length, price visibility, sale (with editable label), custom and first-product-tag badges, badge corner/alignment, button label, and a landscape 16:10 restaurant-friendly default
-- Card composition controls for image placement (top/bottom/left/right with a separate mobile placement), category/title/description/footer ordering, inline or stacked price/button layout, and price-first or button-first arrangement
-- Quick View Designer controls for image-left/image-right/stacked layouts, content visibility, popup width, background/overlay, radius, padding, typography colors and add-to-cart button styling
-- Wishlist Designer controls for grid/list layouts, configurable columns, visibility of image/price/availability, custom heading, popup width, product-card background/border/radius and text/remove-link colors
-- Compare Designer controls for table or product-card layouts, visibility of comparison fields, custom heading, popup width, background/overlay, table header/border and text/accent colors
 - AJAX pagination works independently from the sidebar filters, reports request errors, and keeps normal page-link navigation as a fallback if AJAX is unavailable
 - Lightweight inline SVG icons without external icon-font requests, plus independent card/image/text/button styling controls
 - Single product showcase with three gallery styles and a sticky add-to-cart bar
 - Elementor Style tab controls for the card shell, image, text container, title, description, category, price, badges, action icons, and add-to-cart button, including typography, color, border, shadow, padding, radius, spacing, and responsive layout values
 - Conditional asset loading — styles and scripts only load on pages where a widget is actually present
-
-## Version 1.7.0 notes
-
-- Added flexible card composition: image placement can be top, bottom, left or right, with a separate mobile placement; category, title, description and price/button group have independent order controls.
-- Added inline/stacked price and add-to-cart arrangements plus price-first/button-first ordering, which supports restaurant menus and fashion/apparel catalog layouts.
-- Added dedicated Quick View, Wishlist and Compare Designer sections to the Elementor Style tab. Popup style values are passed per widget to the front-end overlays.
-- Added Quick View layout selection (image-left, image-right, stacked) and visibility switches for image, title, price, category, SKU, stock status and description.
-- Added Wishlist grid/list layouts, column count, product-field visibility, editable heading, popup width, colors, borders and corner radius.
-- Added Compare table/card layouts, per-field visibility, editable heading, popup width, overlay/background, table header/border and text/accent styling.
-- Updated the AJAX settings whitelist so card layout and popup designer settings remain available after product filtering and pagination.
-- Wishlist and compare selections remain browser-local; they are not synchronized between devices or user accounts.
 
 ## Version 1.6.0 notes
 

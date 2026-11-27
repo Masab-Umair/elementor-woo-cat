@@ -60,10 +60,6 @@ final class Render_Helpers {
 			'cart_vertical_alignment'  => 'bottom',
 			'button_alignment'         => 'center',
 			'card_button_label'        => '',
-			'card_image_placement'     => 'top',
-			'card_image_placement_mobile' => 'top',
-			'card_footer_layout'       => 'inline',
-			'price_button_order'       => 'price-first',
 		);
 		$settings = wp_parse_args( $settings, $defaults );
 
@@ -85,10 +81,6 @@ final class Render_Helpers {
 			: '';
 
 		$card_classes = array( 'ewcb-card' );
-		$image_placement = in_array( $settings['card_image_placement'], array( 'top', 'bottom', 'left', 'right' ), true ) ? $settings['card_image_placement'] : 'top';
-		$mobile_placement = in_array( $settings['card_image_placement_mobile'], array( 'top', 'bottom', 'left', 'right' ), true ) ? $settings['card_image_placement_mobile'] : 'top';
-		$card_classes[] = 'ewcb-card--image-' . $image_placement;
-		$card_classes[] = 'ewcb-card--mobile-image-' . $mobile_placement;
 		if ( ! empty( $settings['image_hover_zoom'] ) ) {
 			$card_classes[] = 'ewcb-card--hover-zoom';
 		}
@@ -195,7 +187,7 @@ final class Render_Helpers {
 					<div class="ewcb-card__description"><?php echo esc_html( $description ); ?></div>
 				<?php endif; ?>
 
-				<div class="ewcb-card__footer ewcb-card__footer--<?php echo 'stacked' === $settings['card_footer_layout'] || 'full' === $settings['cart_button_width'] ? 'stacked' : 'inline'; ?><?php echo 'button-first' === $settings['price_button_order'] ? ' ewcb-card__footer--button-first' : ''; ?>">
+				<div class="ewcb-card__footer ewcb-card__footer--<?php echo 'inline' === $settings['cart_button_width'] ? 'inline' : 'stacked'; ?>">
 					<?php if ( ! empty( $settings['show_price'] ) ) : ?>
 						<div class="ewcb-card__price"><?php echo wp_kses_post( $product->get_price_html() ); ?></div>
 					<?php endif; ?>
